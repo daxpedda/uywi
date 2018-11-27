@@ -36,4 +36,4 @@ features = [
 #lto = true
 
 # cargo build --release
-# wasm-bindgen --no-typescript --no-modules target/wasm32-unknown-unknown/release/uywi.wasm --out-dir www
+# wasm-bindgen --no-typescript --no-modules target/wasm32-unknown-unknown/release/uywi.wasm --out-dir docs
