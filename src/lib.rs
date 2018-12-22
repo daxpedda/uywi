@@ -129,9 +129,9 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 
 		for _ in 0..Word::CONSONANTS.len() - 3 {
 			// print word
-			let link = document.create_element("a")?/*.dyn_into::<web_sys::HtmlLinkElement>()?*/;
-			/*link.set_inner_text(word.to_string().as_str());
-			link.set_href(&format!("javascript:displayForms({})", word.get_id()));*/
+			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
+			link.set_inner_text(word.to_string().as_str());
+			link.set_attribute("href", &format!("javascript:displayForms({})", word.get_id()))?;
 			row.insert_cell()?.append_child(&link)?;
 
 			// get next word

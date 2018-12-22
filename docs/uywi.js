@@ -155,6 +155,23 @@ __exports.__widl_f_set_onload_Document = function(arg0, arg1) {
     __widl_f_set_onload_Document_target.call(getObject(arg0), getObject(arg1));
 };
 
+const __widl_f_set_attribute_Element_target = typeof Element === 'undefined' ? null : Element.prototype.setAttribute || function() {
+    throw new Error(`wasm-bindgen: Element.setAttribute does not exist`);
+};
+
+__exports.__widl_f_set_attribute_Element = function(arg0, arg1, arg2, arg3, arg4, exnptr) {
+    let varg1 = getStringFromWasm(arg1, arg2);
+    let varg3 = getStringFromWasm(arg3, arg4);
+    try {
+        __widl_f_set_attribute_Element_target.call(getObject(arg0), varg1, varg3);
+    } catch (e) {
+        const view = getUint32Memory();
+        view[exnptr / 4] = 1;
+        view[exnptr / 4 + 1] = addHeapObject(e);
+
+    }
+};
+
 const __widl_f_prevent_default_Event_target = typeof Event === 'undefined' ? null : Event.prototype.preventDefault || function() {
     throw new Error(`wasm-bindgen: Event.preventDefault does not exist`);
 };
@@ -193,12 +210,25 @@ __exports.__widl_f_length_HTMLCollection = function(arg0) {
     return __widl_f_length_HTMLCollection_target.call(getObject(arg0));
 };
 
+__exports.__widl_instanceof_HTMLElement = function(idx) {
+    return getObject(idx) instanceof HTMLElement ? 1 : 0;
+};
+
 const __widl_f_click_HTMLElement_target = typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype.click || function() {
     throw new Error(`wasm-bindgen: HTMLElement.click does not exist`);
 };
 
 __exports.__widl_f_click_HTMLElement = function(arg0) {
     __widl_f_click_HTMLElement_target.call(getObject(arg0));
+};
+
+const __widl_f_set_inner_text_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'innerText').set || function() {
+    throw new Error(`wasm-bindgen: HTMLElement.innerText does not exist`);
+};
+
+__exports.__widl_f_set_inner_text_HTMLElement = function(arg0, arg1, arg2) {
+    let varg1 = getStringFromWasm(arg1, arg2);
+    __widl_f_set_inner_text_HTMLElement_target.call(getObject(arg0), varg1);
 };
 
 __exports.__widl_instanceof_HTMLFormElement = function(idx) {
@@ -351,7 +381,7 @@ function takeObject(idx) {
 
 __exports.__wbindgen_rethrow = function(idx) { throw takeObject(idx); };
 
-__exports.__wbindgen_closure_wrapper7 = function(a, b, _ignored) {
+__exports.__wbindgen_closure_wrapper9 = function(a, b, _ignored) {
     const f = wasm.__wbg_function_table.get(2);
     const d = wasm.__wbg_function_table.get(3);
     const cb = function() {
