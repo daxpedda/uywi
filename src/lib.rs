@@ -110,8 +110,9 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 
 	// fix first two letters according to page
 	for page in 1..page_value {
-		// increment fist letter every 31 pages
-		if page % Word::CONSONANTS.len() - 1 == 0 {
+		// increment fist letter every time we switch the first letter
+		// which is full length -1
+		if page % (Word::CONSONANTS.len() - 1) == 0 {
 			// increment first letter
 			word.increment_letter(0);
 		}
