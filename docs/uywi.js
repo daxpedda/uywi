@@ -201,15 +201,6 @@ __exports.__widl_f_click_HTMLElement = function(arg0) {
     __widl_f_click_HTMLElement_target.call(getObject(arg0));
 };
 
-const __widl_f_set_inner_text_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'innerText').set || function() {
-    throw new Error(`wasm-bindgen: HTMLElement.innerText does not exist`);
-};
-
-__exports.__widl_f_set_inner_text_HTMLElement = function(arg0, arg1, arg2) {
-    let varg1 = getStringFromWasm(arg1, arg2);
-    __widl_f_set_inner_text_HTMLElement_target.call(getObject(arg0), varg1);
-};
-
 __exports.__widl_instanceof_HTMLFormElement = function(idx) {
     return getObject(idx) instanceof HTMLFormElement ? 1 : 0;
 };
@@ -229,19 +220,6 @@ const __widl_f_value_as_number_HTMLInputElement_target = GetOwnOrInheritedProper
 
 __exports.__widl_f_value_as_number_HTMLInputElement = function(arg0) {
     return __widl_f_value_as_number_HTMLInputElement_target.call(getObject(arg0));
-};
-
-__exports.__widl_instanceof_HTMLLinkElement = function(idx) {
-    return getObject(idx) instanceof HTMLLinkElement ? 1 : 0;
-};
-
-const __widl_f_set_href_HTMLLinkElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLLinkElement === 'undefined' ? null : HTMLLinkElement.prototype, 'href').set || function() {
-    throw new Error(`wasm-bindgen: HTMLLinkElement.href does not exist`);
-};
-
-__exports.__widl_f_set_href_HTMLLinkElement = function(arg0, arg1, arg2) {
-    let varg1 = getStringFromWasm(arg1, arg2);
-    __widl_f_set_href_HTMLLinkElement_target.call(getObject(arg0), varg1);
 };
 
 __exports.__widl_instanceof_HTMLTableElement = function(idx) {
@@ -373,7 +351,7 @@ function takeObject(idx) {
 
 __exports.__wbindgen_rethrow = function(idx) { throw takeObject(idx); };
 
-__exports.__wbindgen_closure_wrapper9 = function(a, b, _ignored) {
+__exports.__wbindgen_closure_wrapper7 = function(a, b, _ignored) {
     const f = wasm.__wbg_function_table.get(2);
     const d = wasm.__wbg_function_table.get(3);
     const cb = function() {
