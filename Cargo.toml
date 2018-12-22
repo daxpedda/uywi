@@ -8,32 +8,33 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasm-bindgen = "0.2"
-js-sys = "0.3"
+wasm-bindgen = ">= 0.2"
+wee_alloc = ">= 0.4"
+console_error_panic_hook = ">= 0.1"
 
 [dependencies.web-sys]
-version = "0.3"
+version = ">= 0.3"
 features = [
-  'Document',
-  'Element',
-  'HtmlElement',
-  'HtmlInputElement',
-  'HtmlButtonElement',
-  'HtmlSpanElement',
-  'HtmlFormElement',
-  'HtmlTableElement',
-  'HtmlTableRowElement',
-  'HtmlCollection',
-  'Node',
-  'Window',
-  'CssStyleDeclaration',
-  'console',
-  'Event',
-  'EventTarget'
+  "Document",
+  "Element",
+  "Event",
+  "EventTarget",
+  "HtmlButtonElement",
+  "HtmlCollection",
+  "HtmlElement",
+  "HtmlFormElement",
+  "HtmlInputElement",
+  "HtmlTableElement",
+  "HtmlTableRowElement",
+  "Window"
 ]
 
-#[profile.release]
-#lto = true
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+panic = "abort"
 
 # cargo build --release
-# wasm-bindgen --no-typescript --no-modules target/wasm32-unknown-unknown/release/uywi.wasm --out-dir docs
+# wasm-bindgen --no-typescript --no-modules --browser target/wasm32-unknown-unknown/release/uywi.wasm --out-dir docs
+# wasm-opt -Os -o docs/uywi.wasm docs/uywi_bg.wasm
