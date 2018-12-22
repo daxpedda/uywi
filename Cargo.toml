@@ -24,8 +24,10 @@ features = [
   "HtmlElement",
   "HtmlFormElement",
   "HtmlInputElement",
+  "HtmlLinkElement",
   "HtmlTableElement",
   "HtmlTableRowElement",
+  "Node",
   "Window"
 ]
 
@@ -38,3 +40,4 @@ panic = "abort"
 # cargo build --release
 # wasm-bindgen --no-typescript --no-modules --browser target/wasm32-unknown-unknown/release/uywi.wasm --out-dir docs
 # wasm-opt -Os -o docs/uywi.wasm docs/uywi_bg.wasm
+# del /F "docs\uywi_bg.wasm"

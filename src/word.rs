@@ -96,4 +96,8 @@ impl Word {
 			unsafe { Self::CONSONANTS.get_unchecked(self.word[0]) }
 		);
 	}
+
+	pub fn get_id(&self) -> usize {
+		return self.word[3] + self.word[2] * 10 + self.word[1] * 100 + self.word[0] * 1000;
+	}
 }
