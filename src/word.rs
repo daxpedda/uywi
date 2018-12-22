@@ -16,9 +16,9 @@ impl Default for Word {
 }
 
 impl Word {
-	pub const CONSONANTS: [char; 32] = [
-	                                '?', 'y', 'w', 'h', '2', '7', 'q', '5', 'k', '8', 'g', 'j', '3', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
-	                                '0', '6', 'f', 'b', 'p', 'm', 'n', 'o', 'r', 'l',
+	pub const CONSONANTS: [char; 44] = [
+		'?', 'y', 'w', 'h', '2', 'H', 'K', 'k', 'X', 'x', '8', 'y', 'G', 'g', 'j', '7', '3', 'Q', 'c', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
+		'P', '0', 'B', '6', 'v', 'f', 'p', 'b', 'm', 'n', 'o', '1', 'R', 'r', 'L', 'l',
 	];
 
 	fn reset_letter(&mut self, index: usize) {
@@ -51,9 +51,9 @@ impl Word {
 
 				// make sure there is not a duplicate letter
 				if (index > 0 && self.word[0] == index_letter)
-				   || (index > 1 && self.word[1] == index_letter)
-				   || (index > 2 && self.word[2] == index_letter)
-				   || (index > 3 && self.word[3] == index_letter)
+					|| (index > 1 && self.word[1] == index_letter)
+					|| (index > 2 && self.word[2] == index_letter)
+					|| (index > 3 && self.word[3] == index_letter)
 				{
 					// assert checked up there
 					*(unsafe { self.word.get_unchecked_mut(index) }) += 1;
@@ -88,12 +88,12 @@ impl Word {
 		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[3]));
 
 		return format!(
-		               "{}{}{}{}",
-		               // assert checked all indexes up there
-		               unsafe { Self::CONSONANTS.get_unchecked(self.word[1]) },
-		               unsafe { Self::CONSONANTS.get_unchecked(self.word[3]) },
-		               unsafe { Self::CONSONANTS.get_unchecked(self.word[2]) },
-		               unsafe { Self::CONSONANTS.get_unchecked(self.word[0]) }
+			"{}{}{}{}",
+			// assert checked all indexes up there
+			unsafe { Self::CONSONANTS.get_unchecked(self.word[1]) },
+			unsafe { Self::CONSONANTS.get_unchecked(self.word[3]) },
+			unsafe { Self::CONSONANTS.get_unchecked(self.word[2]) },
+			unsafe { Self::CONSONANTS.get_unchecked(self.word[0]) }
 		);
 	}
 }

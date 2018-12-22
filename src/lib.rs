@@ -1,7 +1,7 @@
 #![no_std]
 #![feature(type_ascription, uniform_paths, range_contains, try_blocks, alloc)]
 #![warn(
-	//clippy::cargo, // rls being weird
+	clippy::cargo, // rls being weird
 	clippy::pedantic,
 	clippy::restriction
 )]
@@ -36,9 +36,10 @@ pub fn run() -> Result<(), JsValue> {
 	//std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
 	// get document
-	let document = web_sys::window().ok_or("window should exist")?
-	                                .document()
-	                                .ok_or("should have a document on window")?;
+	let document = web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?;
 
 	// if dom already loaded start script
 	if document.ready_state() == "complete" {
@@ -56,16 +57,17 @@ pub fn run() -> Result<(), JsValue> {
 
 fn onload() -> Result<(), JsValue> {
 	// load default page
-	web_sys::window().ok_or("window should exist")?
-	                                .document()
-	                                .ok_or("should have a document on window")?
-	                                .forms()
-	                                .get_with_index(0) // get only form on page
-									.ok_or("should have a form")?
-	                                .dyn_into::<web_sys::HtmlFormElement>()?
-	                                .get_with_name("load") // get load button
-	                                .dyn_into::<web_sys::HtmlButtonElement>()?
-									.click(); // clicking on it triggers onsubmit(event)
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(0) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("load") // get load button
+		.dyn_into::<web_sys::HtmlButtonElement>()?
+		.click(); // clicking on it triggers onsubmit(event)
 
 	return Ok(());
 }
@@ -85,14 +87,16 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 	                      as usize; // convert to int
 
 	// get document
-	let document = web_sys::window().ok_or("window should exist")?
-	                                .document()
-	                                .ok_or("should have a document on window")?;
+	let document = web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?;
 
 	// get table
-	let word_table = document.get_element_by_id("word_table")
-	                         .ok_or("table should exist")?
-	                         .dyn_into::<web_sys::HtmlTableElement>()?;
+	let word_table = document
+		.get_element_by_id("word_table")
+		.ok_or("table should exist")?
+		.dyn_into::<web_sys::HtmlTableElement>()?;
 
 	// clear table
 	for _ in 0..word_table.rows().length() {
@@ -107,7 +111,7 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 	// fix first two letters according to page
 	for page in 1..page_value {
 		// increment fist letter every 31 pages
-		if page % 31 == 0 {
+		if page % Word::CONSONANTS.len() - 1 == 0 {
 			// increment first letter
 			word.increment_letter(0);
 		}
