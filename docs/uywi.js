@@ -36,6 +36,17 @@
 
     };
 
+    /**
+    * @param {number} arg0
+    * @param {number} arg1
+    * @param {number} arg2
+    * @param {number} arg3
+    * @returns {void}
+    */
+    __exports.display_forms = function(arg0, arg1, arg2, arg3) {
+        return wasm.display_forms(arg0, arg1, arg2, arg3);
+    };
+
 function getObject(idx) { return heap[idx]; }
 
 let cachedTextDecoder = new TextDecoder('utf-8');

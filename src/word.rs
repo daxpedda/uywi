@@ -1,4 +1,6 @@
+use alloc::string::String;
 use core::hint::unreachable_unchecked;
+use unchecked_unwrap::*;
 
 pub struct Word {
 	word: [usize; 4]
@@ -80,7 +82,7 @@ impl Word {
 		self.fix_letter(index);
 	}
 
-	pub fn to_string(&self) -> alloc::string::String {
+	pub fn to_string(&self) -> String {
 		// check out of bounds
 		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[0]));
 		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[1]));
@@ -97,7 +99,58 @@ impl Word {
 		);
 	}
 
-	pub fn get_id(&self) -> usize {
-		return self.word[3] + self.word[2] * 10 + self.word[1] * 100 + self.word[0] * 1000;
+	fn generate_form(&self, prefix: usize, suffix: usize, r_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
+		let mut forms: [String; 4] = Default::default();
+
+		for (iter, vocals) in [('v', 'v'), ('v', 'y'), ('y', 'v'), ('y', 'y')].iter().enumerate() {
+			let form = unsafe { forms.get_unchecked_mut(iter) };
+			*form = self.to_string();
+			let word_len = form.len();
+			let mut vocal_num = 2;
+
+			debug_assert!(prefix + suffix < word_len);
+			form.insert(prefix, vocals.0);
+			form.insert(form.len() - suffix, vocals.1);
+
+			if let Some(r_infix) = r_infix {
+				debug_assert!(prefix + suffix + r_infix < word_len);
+				vocal_num = 3;
+				form.insert(prefix + r_infix + 1, vocals.0);
+			}
+
+			if let Some(duplicate) = duplicate {
+				debug_assert!(duplicate < word_len + vocal_num);
+
+				unsafe {
+					let duplicate_letter = form.get_unchecked(duplicate..=duplicate).chars().nth(0).unchecked_unwrap();
+					form.insert(duplicate, duplicate_letter);
+				}
+			}
+		}
+
+		return forms;
+	}
+
+	pub fn generate_forms(&self) -> [[String; 4]; 8] {
+		let mut strings: [[String; 4]; 8] = Default::default();
+
+		strings[0] = self.generate_form(1, 1, None, None);
+		strings[1] = self.generate_form(1, 1, None, Some(4));
+		strings[2] = self.generate_form(1, 1, None, Some(3));
+		strings[3] = self.generate_form(1, 2, None, Some(6));
+		strings[4] = self.generate_form(1, 2, None, Some(7));
+		strings[5] = self.generate_form(1, 1, Some(1), Some(5));
+		strings[6] = self.generate_form(1, 1, Some(1), Some(6));
+		strings[7] = self.generate_form(1, 2, Some(1), Some(7));
+
+		return strings;
+	}
+
+	pub fn get_id(&self) -> [usize; 4] {
+		return self.word;
+	}
+
+	pub fn new(id: [usize; 4]) -> Self {
+		return Self { word: id };
 	}
 }

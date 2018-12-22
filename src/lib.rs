@@ -130,8 +130,17 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 		for _ in 0..Word::CONSONANTS.len() - 3 {
 			// print word
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(word.to_string().as_str());
-			link.set_attribute("href", &format!("javascript:displayForms({})", word.get_id()))?;
+			link.set_inner_text(&word.to_string());
+			link.set_attribute(
+				"href",
+				&format!(
+					"javascript:wasm_bindgen.display_forms({}, {}, {}, {})",
+					word.get_id()[0],
+					word.get_id()[1],
+					word.get_id()[2],
+					word.get_id()[3]
+				)
+			)?;
 			row.insert_cell()?.append_child(&link)?;
 
 			// get next word
@@ -142,5 +151,38 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 		word.increment_letter(2);
 	}
 
+	return Ok(());
+}
+
+#[wasm_bindgen]
+pub fn display_forms(id_0: usize, id_1: usize, id_2: usize, id_3: usize) -> Result<(), JsValue> {
+	// get document
+	let document = web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?;
+		
+	// get table
+	let word_table = document
+		.get_element_by_id("word_table")
+		.ok_or("table should exist")?
+		.dyn_into::<web_sys::HtmlTableElement>()?;
+
+	// clear table
+	for _ in 0..word_table.rows().length() {
+		word_table.delete_row(-1)?;
+	}
+
+	// prepare forms
+	let forms = Word::new([id_0, id_1, id_2, id_3]).generate_forms();
+	
+	for form in &forms {
+		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
+		
+		for form in form {
+			row.insert_cell()?.set_inner_text(&form);
+		}
+	}
+	
 	return Ok(());
 }
