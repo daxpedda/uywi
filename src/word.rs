@@ -102,7 +102,7 @@ impl Word {
 	fn generate_form(&self, prefix: usize, suffix: usize, r_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
 		let mut forms: [String; 4] = Default::default();
 
-		/*for (iter, vocals) in [('v', 'v'), ('v', 'y'), ('y', 'v'), ('y', 'y')].iter().enumerate() {
+		for (iter, vocals) in [('v', 'v'), ('v', 'y'), ('y', 'v'), ('y', 'y')].iter().enumerate() {
 			let form = unsafe { forms.get_unchecked_mut(iter) };
 			*form = self.to_string();
 			let word_len = form.len();
@@ -122,11 +122,11 @@ impl Word {
 				debug_assert!(duplicate <= word_len + vocal_num);
 
 				unsafe {
-					let duplicate_letter = form.get_unchecked(duplicate..=duplicate).chars().nth(0).unchecked_unwrap();
+					let duplicate_letter = form.get_unchecked(duplicate - 1..duplicate).chars().nth(0).unchecked_unwrap();
 					form.insert(duplicate, duplicate_letter);
 				}
 			}
-		}*/
+		}
 
 		return forms;
 	}
@@ -135,13 +135,13 @@ impl Word {
 		let mut strings: [[String; 4]; 8] = Default::default();
 
 		strings[0] = self.generate_form(1, 1, None, None);
-		strings[1] = self.generate_form(1, 1, None, Some(4));
-		strings[2] = self.generate_form(1, 1, None, Some(3));
-		strings[3] = self.generate_form(1, 2, None, Some(6));
-		strings[4] = self.generate_form(1, 2, None, Some(7));
-		strings[5] = self.generate_form(1, 1, Some(1), Some(5));
-		strings[6] = self.generate_form(1, 1, Some(1), Some(6));
-		strings[7] = self.generate_form(1, 2, Some(1), Some(7));
+		strings[1] = self.generate_form(1, 1, None, Some(3));
+		strings[2] = self.generate_form(1, 1, None, Some(2));
+		strings[3] = self.generate_form(1, 2, None, Some(5));
+		strings[4] = self.generate_form(1, 2, None, Some(6));
+		strings[5] = self.generate_form(1, 1, Some(1), Some(4));
+		strings[6] = self.generate_form(1, 1, Some(1), Some(5));
+		strings[7] = self.generate_form(1, 2, Some(1), Some(6));
 
 		return strings;
 	}
