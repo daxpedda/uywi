@@ -25,9 +25,39 @@
     * @param {any} arg0
     * @returns {void}
     */
-    __exports.onsubmit = function(arg0) {
+    __exports.load_page = function(arg0) {
         try {
-            return wasm.onsubmit(addBorrowedObject(arg0));
+            return wasm.load_page(addBorrowedObject(arg0));
+
+        } finally {
+            heap[stack_pointer++] = undefined;
+
+        }
+
+    };
+
+    /**
+    * @param {any} arg0
+    * @returns {void}
+    */
+    __exports.check_word = function(arg0) {
+        try {
+            return wasm.check_word(addBorrowedObject(arg0));
+
+        } finally {
+            heap[stack_pointer++] = undefined;
+
+        }
+
+    };
+
+    /**
+    * @param {any} arg0
+    * @returns {void}
+    */
+    __exports.load_word = function(arg0) {
+        try {
+            return wasm.load_word(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
@@ -253,6 +283,37 @@ __exports.__widl_f_get_with_name_HTMLFormElement = function(arg0, arg1, arg2) {
 
 __exports.__widl_instanceof_HTMLInputElement = function(idx) {
     return getObject(idx) instanceof HTMLInputElement ? 1 : 0;
+};
+
+const __widl_f_check_validity_HTMLInputElement_target = typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype.checkValidity || function() {
+    throw new Error(`wasm-bindgen: HTMLInputElement.checkValidity does not exist`);
+};
+
+__exports.__widl_f_check_validity_HTMLInputElement = function(arg0) {
+    return __widl_f_check_validity_HTMLInputElement_target.call(getObject(arg0));
+};
+
+const __widl_f_set_custom_validity_HTMLInputElement_target = typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype.setCustomValidity || function() {
+    throw new Error(`wasm-bindgen: HTMLInputElement.setCustomValidity does not exist`);
+};
+
+__exports.__widl_f_set_custom_validity_HTMLInputElement = function(arg0, arg1, arg2) {
+    let varg1 = getStringFromWasm(arg1, arg2);
+    __widl_f_set_custom_validity_HTMLInputElement_target.call(getObject(arg0), varg1);
+};
+
+const __widl_f_value_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'value').get || function() {
+    throw new Error(`wasm-bindgen: HTMLInputElement.value does not exist`);
+};
+
+__exports.__widl_f_value_HTMLInputElement = function(ret, arg0) {
+
+    const retptr = passStringToWasm(__widl_f_value_HTMLInputElement_target.call(getObject(arg0)));
+    const retlen = WASM_VECTOR_LEN;
+    const mem = getUint32Memory();
+    mem[ret / 4] = retptr;
+    mem[ret / 4 + 1] = retlen;
+
 };
 
 const __widl_f_value_as_number_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'valueAsNumber').get || function() {

@@ -73,7 +73,7 @@ fn onload() -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
+pub fn load_page(event: &web_sys::Event) -> Result<(), JsValue> {
 	// prevent from form navigating to sommewhere else
 	event.prevent_default();
 
@@ -155,13 +155,70 @@ pub fn onsubmit(event: &web_sys::Event) -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn check_word(event: &web_sys::Event) -> Result<(), JsValue> {
+	// getting input field
+	let input = event
+		.target()
+		.ok_or("event should have input in target")?
+		.dyn_into::<web_sys::HtmlInputElement>()?;
+	// get value
+	let word = input.value();
+
+	// reset checks
+	input.set_custom_validity("");
+
+	// check if html checks are passed
+	if input.check_validity() {
+		// check if word was successfully generated
+		match Word::from_string(&word) {
+			Ok(word) => {
+				let word = word.get_id();
+				return display_forms(word[0], word[1], word[2], word[3]);
+			},
+			// otherwise return error
+			Err(err) => {
+				input.set_custom_validity(err);
+				return Ok(());
+			}
+		}
+	}
+	// if it didn't pass html check, go away!
+	else {
+		return Ok(());
+	}
+}
+
+#[wasm_bindgen]
+pub fn load_word(event: &web_sys::Event) -> Result<(), JsValue> {
+	// prevent from form navigating to sommewhere else
+	event.prevent_default();
+
+	// getting page input
+	let word = event
+		.target() // getting form
+		.ok_or("event should have form in target")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("word") // get input field
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.value(); // get value
+
+	if let Ok(word) = Word::from_string(&word) {
+		let word = word.get_id();
+		return display_forms(word[0], word[1], word[2], word[3]);
+	}
+	else {
+		return Err("asd".into());
+	}
+}
+
+#[wasm_bindgen]
 pub fn display_forms(id_0: usize, id_1: usize, id_2: usize, id_3: usize) -> Result<(), JsValue> {
 	// get document
 	let document = web_sys::window()
 		.ok_or("window should exist")?
 		.document()
 		.ok_or("should have a document on window")?;
-		
+
 	// get table
 	let word_table = document
 		.get_element_by_id("word_table")
@@ -174,15 +231,15 @@ pub fn display_forms(id_0: usize, id_1: usize, id_2: usize, id_3: usize) -> Resu
 	}
 
 	// prepare forms
-	let forms = Word::new([id_0, id_1, id_2, id_3]).generate_forms();
-	
+	let forms = Word::from_id([id_0, id_1, id_2, id_3]).generate_forms();
+
 	for form in &forms {
 		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
-		
+
 		for form in form {
 			row.insert_cell()?.set_inner_text(&form);
 		}
 	}
-	
+
 	return Ok(());
 }

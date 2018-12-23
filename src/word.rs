@@ -122,7 +122,7 @@ impl Word {
 				debug_assert!(duplicate <= word_len + vocal_num);
 
 				unsafe {
-					let duplicate_letter = form.get_unchecked(duplicate - 1..duplicate).chars().nth(0).unchecked_unwrap();
+					let duplicate_letter = form.chars().nth(duplicate - 1).unchecked_unwrap();
 					form.insert(duplicate, duplicate_letter);
 				}
 			}
@@ -150,7 +150,36 @@ impl Word {
 		return self.word;
 	}
 
-	pub fn new(id: [usize; 4]) -> Self {
+	pub fn from_id(id: [usize; 4]) -> Self {
 		return Self { word: id };
+	}
+
+	pub fn from_string(string: &str) -> Result<Self, &str> {
+		let letters = [
+			Self::CONSONANTS
+				.iter()
+				.position(|letter| return letter == unsafe { &string.chars().nth(0).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+			Self::CONSONANTS
+				.iter()
+				.position(|letter| return letter == unsafe { &string.chars().nth(1).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+			Self::CONSONANTS
+				.iter()
+				.position(|letter| return letter == unsafe { &string.chars().nth(2).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+			Self::CONSONANTS
+				.iter()
+				.position(|letter| return letter == unsafe { &string.chars().nth(3).unchecked_unwrap() }).ok_or("Invalid letters.")?
+		];
+
+		for (key_outer, letter_outer) in letters.iter().enumerate() {
+			for (key_inner, letter_inner) in letters.iter().enumerate() {
+				if key_outer != key_inner && letter_outer == letter_inner {
+					return Err("Duplicate letters found.");
+				}
+			}
+		}
+
+		return Ok(Self {
+			word: [letters[3], letters[0], letters[2], letters[1]]
+		});
 	}
 }

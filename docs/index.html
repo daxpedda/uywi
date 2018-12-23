@@ -4,9 +4,15 @@
 		<script src="uywi.js" async onload="wasm_bindgen('uywi.wasm')"></script>
 	</head>
 	<body>
-		<form onsubmit="wasm_bindgen.onsubmit(event)">
+		<form onsubmit="wasm_bindgen.load_page(event)">
 			<span>Page: </span>
 			<input type="number" name="page" required min="1" max="1892" value="1" style="width: 3rem;">
+			<span> </span>
+			<button type="submit" name="load">Load</button>
+		</form>
+		<form onsubmit="wasm_bindgen.load_word(event)">
+			<span>Word: </span>
+			<input type="text" name="word" required minlength="4" maxlength="4" value="" style="width: 3rem;" oninput="wasm_bindgen.check_word(event)">
 			<span> </span>
 			<button type="submit" name="load">Load</button>
 		</form>
