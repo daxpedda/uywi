@@ -169,23 +169,14 @@ pub fn check_word(event: &web_sys::Event) -> Result<(), JsValue> {
 
 	// check if html checks are passed
 	if input.check_validity() {
-		// check if word was successfully generated
-		match Word::from_string(&word) {
-			Ok(word) => {
-				let word = word.get_id();
-				return display_forms(word[0], word[1], word[2], word[3]);
-			},
-			// otherwise return error
-			Err(err) => {
-				input.set_custom_validity(err);
-				return Ok(());
-			}
+		// we want to display custom error messages if word wasn't generated
+		if let Err(err) = Word::from_string(&word) {
+			input.set_custom_validity(err);
+			return Ok(());
 		}
 	}
-	// if it didn't pass html check, go away!
-	else {
-		return Ok(());
-	}
+
+	return Ok(());
 }
 
 #[wasm_bindgen]
