@@ -137,8 +137,8 @@ impl Word {
 		strings[0] = self.generate_form(1, 1, None, None);
 		strings[1] = self.generate_form(1, 1, None, Some(3));
 		strings[2] = self.generate_form(1, 1, None, Some(2));
-		strings[3] = self.generate_form(1, 2, None, Some(5));
-		strings[4] = self.generate_form(1, 2, None, Some(6));
+		strings[3] = self.generate_form(1, 1, None, Some(5));
+		strings[4] = self.generate_form(1, 1, None, Some(6));
 		strings[5] = self.generate_form(1, 1, Some(1), Some(4));
 		strings[6] = self.generate_form(1, 1, Some(1), Some(5));
 		strings[7] = self.generate_form(1, 1, Some(1), Some(6));
