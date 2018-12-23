@@ -141,7 +141,7 @@ impl Word {
 		strings[4] = self.generate_form(1, 2, None, Some(6));
 		strings[5] = self.generate_form(1, 1, Some(1), Some(4));
 		strings[6] = self.generate_form(1, 1, Some(1), Some(5));
-		strings[7] = self.generate_form(1, 2, Some(1), Some(6));
+		strings[7] = self.generate_form(1, 1, Some(1), Some(6));
 
 		return strings;
 	}
