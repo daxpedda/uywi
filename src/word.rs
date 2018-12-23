@@ -19,8 +19,8 @@ impl Default for Word {
 
 impl Word {
 	pub const CONSONANTS: [char; 44] = [
-		'?', 'Y', 'w', 'h', '2', 'H', 'K', 'k', 'X', 'x', '8', 'y', 'G', 'g', 'j', '7', '3', 'Q', 'c', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
-		'P', '0', 'B', '6', 'v', 'f', 'p', 'b', 'm', 'n', 'o', '1', 'R', 'r', 'L', 'l',
+		'?', 'Y', 'w', 'h', '2', 'H', 'K', 'k', 'X', 'x', '8', '4', 'G', 'g', 'j', '7', '3', 'Q', 'c', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
+		'P', '0', 'B', '6', 'V', 'f', 'p', 'b', 'm', 'n', 'o', '1', 'R', 'r', 'L', 'l',
 	];
 
 	fn reset_letter(&mut self, index: usize) {
