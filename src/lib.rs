@@ -169,6 +169,19 @@ pub fn display_word(event: &web_sys::Event) -> Result<(), JsValue> {
 				let index = word.get_word_index();
 				let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
 
+				web_sys::window()
+					.ok_or("window should exist")?
+					.document()
+					.ok_or("should have a document on window")?
+					.forms()
+					.get_with_index(0) // get only form on page
+					.ok_or("should have a form")?
+					.dyn_into::<web_sys::HtmlFormElement>()?
+					.get_with_name("page") // get page input
+					.dyn_into::<web_sys::HtmlInputElement>()?
+					.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
+
+
 				return load_page(pages, &Some(word));
 			},
 			// we want to display custom error messages if word wasn't generated

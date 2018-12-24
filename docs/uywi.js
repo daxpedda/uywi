@@ -346,6 +346,14 @@ __exports.__widl_f_value_as_number_HTMLInputElement = function(arg0) {
     return __widl_f_value_as_number_HTMLInputElement_target.call(getObject(arg0));
 };
 
+const __widl_f_set_value_as_number_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'valueAsNumber').set || function() {
+    throw new Error(`wasm-bindgen: HTMLInputElement.valueAsNumber does not exist`);
+};
+
+__exports.__widl_f_set_value_as_number_HTMLInputElement = function(arg0, arg1) {
+    __widl_f_set_value_as_number_HTMLInputElement_target.call(getObject(arg0), arg1);
+};
+
 __exports.__widl_instanceof_HTMLTableElement = function(idx) {
     return getObject(idx) instanceof HTMLTableElement ? 1 : 0;
 };
