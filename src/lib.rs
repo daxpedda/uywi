@@ -279,6 +279,18 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 	// prepare forms
 	let forms = Word::from_word_index(index).generate_forms();
 
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(2) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("index") // get page input
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.set_value_as_number(index as f64); // clicking on it triggers onsubmit(event)
+
 	for form in &forms {
 		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
