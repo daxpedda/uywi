@@ -123,7 +123,9 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 			link.set_inner_text(&word.to_string());
 			link.set_attribute("href", "#")?;
 			let index = word.get_word_index();
-			let onclick_closure = Closure::wrap(Box::new(move |event: web_sys::Event| return display_forms(&event, index)) as Box<Fn(web_sys::Event) -> Result<(), JsValue>>);
+			let onclick_closure = Closure::wrap(
+				Box::new(move |event: web_sys::Event| return display_forms(&event, index)) as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
+			);
 			link.set_onclick(Some(onclick_closure.as_ref().unchecked_ref()));
 			onclick_closure.forget();
 			let cell = row.insert_cell()?;
@@ -144,7 +146,7 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 }
 
 #[wasm_bindgen]
-pub fn display_word(event: &web_sys::Event) -> Result<(), JsValue> {
+pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
 	// prevent form from navigating to sommewhere else
 	event.prevent_default();
 
@@ -158,38 +160,75 @@ pub fn display_word(event: &web_sys::Event) -> Result<(), JsValue> {
 	// get value
 	let word = input.value();
 
-	// reset checks
-	input.set_custom_validity("");
+	match Word::from_string(&word) {
+		// if everything checks out, display page!
+		Ok(word) => {
+			let index = word.get_word_index();
+			let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
 
-	// check if html checks are passed
-	if input.check_validity() {
-		match Word::from_string(&word) {
-			// if everything checks out, display page!
-			Ok(word) => {
-				let index = word.get_word_index();
-				let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
+			web_sys::window()
+				.ok_or("window should exist")?
+				.document()
+				.ok_or("should have a document on window")?
+				.forms()
+				.get_with_index(0) // get only form on page
+				.ok_or("should have a form")?
+				.dyn_into::<web_sys::HtmlFormElement>()?
+				.get_with_name("page") // get page input
+				.dyn_into::<web_sys::HtmlInputElement>()?
+				.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
 
-				web_sys::window()
-					.ok_or("window should exist")?
-					.document()
-					.ok_or("should have a document on window")?
-					.forms()
-					.get_with_index(0) // get only form on page
-					.ok_or("should have a form")?
-					.dyn_into::<web_sys::HtmlFormElement>()?
-					.get_with_name("page") // get page input
-					.dyn_into::<web_sys::HtmlInputElement>()?
-					.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
+			web_sys::window()
+				.ok_or("window should exist")?
+				.document()
+				.ok_or("should have a document on window")?
+				.forms()
+				.get_with_index(2) // get only form on page
+				.ok_or("should have a form")?
+				.dyn_into::<web_sys::HtmlFormElement>()?
+				.get_with_name("index") // get page input
+				.dyn_into::<web_sys::HtmlInputElement>()?
+				.set_value_as_number(index as f64); // clicking on it triggers onsubmit(event)
 
-
-				return load_page(pages, &Some(word));
-			},
-			// we want to display custom error messages if word wasn't generated
-			Err(err) => input.set_custom_validity(err)
-		}
+			return load_page(pages, &Some(word));
+		},
+		// we want to display custom error messages if word wasn't generated
+		Err(err) => input.set_custom_validity(err)
 	}
 
 	return Ok(());
+}
+
+#[wasm_bindgen]
+pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
+	// prevent form from navigating to sommewhere else
+	event.prevent_default();
+
+	// getting input field
+	let index = event
+		.target() // getting form
+		.ok_or("event should have form in target")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("index") // get input field
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.value_as_number() as usize;
+
+	let word = Word::from_word_index(index);
+	let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
+
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(0) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("page") // get page input
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
+
+	return load_page(pages, &Some(word));
 }
 
 #[wasm_bindgen]
