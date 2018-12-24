@@ -110,8 +110,7 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 	// calculate amount of words we skipped due to pages
 	let words_skipped = (page_value - 1) * ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3));
 	// prepare word
-	let mut word = Word::default();
-	word.set_word(words_skipped);
+	let mut word = Word::from_word_index(words_skipped);
 
 	// now that the first word is fixed, generate all words for the page
 	for _ in 0..Word::CONSONANTS.len() - 2 {
@@ -122,16 +121,11 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 			// print word
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
 			link.set_inner_text(&word.to_string());
-			link.set_attribute(
-				"href",
-				&format!(
-					"javascript:wasm_bindgen.display_forms({}, {}, {}, {})",
-					word.get_id()[0],
-					word.get_id()[1],
-					word.get_id()[2],
-					word.get_id()[3]
-				)
-			)?;
+			link.set_attribute("href", "#")?;
+			let index = word.get_word_index();
+			let onclick_closure = Closure::wrap(Box::new(move |event: web_sys::Event| return display_forms(&event, index)) as Box<Fn(web_sys::Event) -> Result<(), JsValue>>);
+			link.set_onclick(Some(onclick_closure.as_ref().unchecked_ref()));
+			onclick_closure.forget();
 			let cell = row.insert_cell()?;
 			cell.append_child(&link)?;
 
@@ -151,7 +145,7 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 
 #[wasm_bindgen]
 pub fn display_word(event: &web_sys::Event) -> Result<(), JsValue> {
-	// prevent from form navigating to sommewhere else
+	// prevent form from navigating to sommewhere else
 	event.prevent_default();
 
 	// getting input field
@@ -209,8 +203,10 @@ pub fn check_word(event: &web_sys::Event) -> Result<(), JsValue> {
 	return Ok(());
 }
 
-#[wasm_bindgen]
-pub fn display_forms(id_0: usize, id_1: usize, id_2: usize, id_3: usize) -> Result<(), JsValue> {
+pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
+	// prevent link from navigating to sommewhere else
+	event.prevent_default();
+
 	// get document
 	let document = web_sys::window()
 		.ok_or("window should exist")?
@@ -229,7 +225,7 @@ pub fn display_forms(id_0: usize, id_1: usize, id_2: usize, id_3: usize) -> Resu
 	}
 
 	// prepare forms
-	let forms = Word::from_id([id_0, id_1, id_2, id_3]).generate_forms();
+	let forms = Word::from_word_index(index).generate_forms();
 
 	for form in &forms {
 		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;

@@ -66,17 +66,6 @@
 
     };
 
-    /**
-    * @param {number} arg0
-    * @param {number} arg1
-    * @param {number} arg2
-    * @param {number} arg3
-    * @returns {void}
-    */
-    __exports.display_forms = function(arg0, arg1, arg2, arg3) {
-        return wasm.display_forms(arg0, arg1, arg2, arg3);
-    };
-
 function getObject(idx) { return heap[idx]; }
 
 let cachedTextDecoder = new TextDecoder('utf-8');
@@ -297,6 +286,14 @@ __exports.__widl_f_style_HTMLElement = function(arg0) {
     return addHeapObject(__widl_f_style_HTMLElement_target.call(getObject(arg0)));
 };
 
+const __widl_f_set_onclick_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'onclick').set || function() {
+    throw new Error(`wasm-bindgen: HTMLElement.onclick does not exist`);
+};
+
+__exports.__widl_f_set_onclick_HTMLElement = function(arg0, arg1) {
+    __widl_f_set_onclick_HTMLElement_target.call(getObject(arg0), getObject(arg1));
+};
+
 __exports.__widl_instanceof_HTMLFormElement = function(idx) {
     return getObject(idx) instanceof HTMLFormElement ? 1 : 0;
 };
@@ -478,9 +475,30 @@ function takeObject(idx) {
 
 __exports.__wbindgen_rethrow = function(idx) { throw takeObject(idx); };
 
-__exports.__wbindgen_closure_wrapper9 = function(a, b, _ignored) {
+__exports.__wbindgen_closure_wrapper12 = function(a, b, _ignored) {
     const f = wasm.__wbg_function_table.get(2);
     const d = wasm.__wbg_function_table.get(3);
+    const cb = function(arg0) {
+        this.cnt++;
+        try {
+            return f(this.a, b, addHeapObject(arg0));
+
+        } finally {
+            if (this.cnt-- == 1) d(this.a, b);
+
+        }
+
+    };
+    cb.a = a;
+    cb.cnt = 1;
+    let real = cb.bind(cb);
+    real.original = cb;
+    return addHeapObject(real);
+};
+
+__exports.__wbindgen_closure_wrapper14 = function(a, b, _ignored) {
+    const f = wasm.__wbg_function_table.get(6);
+    const d = wasm.__wbg_function_table.get(7);
     const cb = function() {
         this.cnt++;
         try {

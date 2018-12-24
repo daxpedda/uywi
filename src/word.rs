@@ -58,25 +58,23 @@ impl Word {
 		}
 	}
 
-	fn get_limit(&self, index: usize) -> usize {
-		// little convenience function
-		fn decrement_index(mut index: usize) -> usize {
-			if index == 0 {
-				index = Word::CONSONANTS.len();
-			}
-
-			return index - 1;
+	// little convenience function
+	fn decrement_index(mut index: usize) -> usize {
+		if index == 0 {
+			index = Word::CONSONANTS.len();
 		}
 
+		return index - 1;
+	}
+
+	// functio to calculate character limit every letter can reach
+	// checks for collisions are built-in
+	fn get_limit(&self, index: usize) -> usize {
+		// sanity check
 		debug_assert!(index < self.word.len());
 
-		// no limit if first letter, always return limit higher then current
-		if index == 0 {
-			return self.word[0] + 1;
-		}
-
 		// the closest limit is one character before the default
-		let mut limit = decrement_index(unsafe { *Self::default().word.get_unchecked(index) });
+		let mut limit = Self::decrement_index(unsafe { *Self::default().word.get_unchecked(index) });
 
 		// then we have to check for collisions
 		'outer_loop: loop {
@@ -85,7 +83,7 @@ impl Word {
 				// check if we found a collision
 				if &limit == letter {
 					// decrease limit by one step
-					limit = decrement_index(limit);
+					limit = Self::decrement_index(limit);
 					// and start checking from scratch again
 					continue 'outer_loop;
 				}
@@ -103,7 +101,8 @@ impl Word {
 		// we want to search which letter reached its limit first - backwards
 		for (index, letter) in self.word.iter().enumerate().rev() {
 			// check if it reached its limit
-			if letter == &self.get_limit(index) {
+			// but the last letter doesn't have any limit that we are interested in here
+			if letter == &self.get_limit(index) || index == 0 {
 				// if it did, we need to go higher up!
 				continue;
 			}
@@ -116,9 +115,9 @@ impl Word {
 	}
 
 	// set to arbitrary position in the list
-	pub fn set_word(&mut self, index: usize) {
+	pub fn from_word_index(index: usize) -> Self {
 		// reset word
-		self.word = Self::default().word;
+		let mut word = Self::default();
 
 		// calculate amount of pages
 		let pages = index / ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3));
@@ -128,20 +127,23 @@ impl Word {
 			// increment 1st letter every time we finish through the 2nd letter
 			// which is full length - 1
 			if page % (Self::CONSONANTS.len() - 1) == 0 {
-				self.increment_index(0);
+				word.increment_index(0);
 			}
 			// otherwise increment second letter
 			else {
-				self.increment_index(1);
+				word.increment_index(1);
 			}
 		}
 
 		// then get the rest of the indexes and increment them word by word
 		for _ in pages * ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3))..index {
-			self.increment_word();
+			word.increment_word();
 		}
+
+		return word;
 	}
 
+	// converts word to string
 	pub fn to_string(&self) -> String {
 		// check out of bounds
 		debug_assert!(self.word[0] < Self::CONSONANTS.len());
@@ -159,7 +161,8 @@ impl Word {
 		);
 	}
 
-	fn generate_form(&self, prefix: usize, suffix: usize, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
+	// generate the four forms to a stem
+	fn generate_stem(&self, prefix: usize, suffix: usize, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
 		let mut forms: [String; 4] = Default::default();
 		let word = self.to_string();
 
@@ -200,30 +203,29 @@ impl Word {
 		return forms;
 	}
 
+	// generate all forms within a word and return them
 	pub fn generate_forms(&self) -> [[String; 4]; 8] {
 		let mut strings: [[String; 4]; 8] = Default::default();
 
-		strings[0] = self.generate_form(1, 1, None, None);
-		strings[1] = self.generate_form(1, 1, None, Some(3));
-		strings[2] = self.generate_form(1, 1, None, Some(2));
-		strings[3] = self.generate_form(1, 1, None, Some(5));
-		strings[4] = self.generate_form(1, 1, None, Some(6));
-		strings[5] = self.generate_form(1, 1, Some(1), Some(4));
-		strings[6] = self.generate_form(1, 1, Some(1), Some(5));
-		strings[7] = self.generate_form(1, 1, Some(1), Some(6));
+		strings[0] = self.generate_stem(1, 1, None, None);
+		strings[1] = self.generate_stem(1, 1, None, Some(3));
+		strings[2] = self.generate_stem(1, 1, None, Some(2));
+		strings[3] = self.generate_stem(1, 1, None, Some(5));
+		strings[4] = self.generate_stem(1, 1, None, Some(6));
+		strings[5] = self.generate_stem(1, 1, Some(1), Some(4));
+		strings[6] = self.generate_stem(1, 1, Some(1), Some(5));
+		strings[7] = self.generate_stem(1, 1, Some(1), Some(6));
 
 		return strings;
 	}
 
-	pub fn get_id(&self) -> [usize; 4] {
-		return self.word;
-	}
-
-	pub fn from_id(id: [usize; 4]) -> Self {
-		return Self { word: id };
-	}
-
+	// build word from string
 	pub fn from_string(string: &str) -> Result<Self, &str> {
+		// sanity check
+		debug_assert!(string.len() == Self::default().word.len());
+
+		// insert letters
+		// we did assert above, no run-time checks needed - except for invalid letters
 		let letters = [
 			Self::CONSONANTS
 				.iter()
@@ -251,31 +253,48 @@ impl Word {
 				.ok_or("Invalid letters.")?
 		];
 
+		// check for duplicate keys
+		// looping through all letters
 		for (key_outer, letter_outer) in letters.iter().enumerate() {
+			// looping through all letters again to find a duplicate
 			for (key_inner, letter_inner) in letters.iter().enumerate() {
+				// make sure we are not comparing the same letter to each other
 				if key_outer != key_inner && letter_outer == letter_inner {
+					// if we found a duplicate return an error
 					return Err("Duplicate letters found.");
 				}
 			}
 		}
 
+		// build word and return
+		// make sure we are using the right order for things
+		// this may seem counter-intuitive at first, but letter positions are symmetrical to storage positions, not equal!
 		return Ok(Self {
 			word: [letters[3], letters[0], letters[2], letters[1]]
 		});
 	}
 
+	// get word from word index
 	pub fn get_word_index(&self) -> usize {
-		let mut word = Self::default();
-		let mut index = 0;
+		let mut search_word = Self::default();
+		let mut word_index = 0;
+		let mut multiplier = Self::CONSONANTS.len() * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3);
 
-		loop {
-			word.increment_word();
-			index += 1;
-			if &word == self {
-				break;
+		for index in 0..search_word.word.len() {
+			let letter = *unsafe { self.word.get_unchecked(index) };
+			multiplier /= Self::CONSONANTS.len() - index;
+
+			loop {
+				if unsafe { search_word.word.get_unchecked(index) } == &letter {
+					break;
+				}
+				else {
+					search_word.increment_index(index);
+					word_index += multiplier;
+				}
 			}
 		}
 
-		return index;
+		return word_index;
 	}
 }
