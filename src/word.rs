@@ -1,19 +1,14 @@
 use alloc::string::String;
-use core::hint::unreachable_unchecked;
 use unchecked_unwrap::*;
 
+#[derive(PartialEq)]
 pub struct Word {
 	word: [usize; 4]
 }
 
 impl Default for Word {
 	fn default() -> Self {
-		let mut word = Self { word: [0; 4] };
-		word.reset_letter(0);
-		word.reset_letter(1);
-		word.reset_letter(2);
-		word.reset_letter(3);
-		return word;
+		return Self { word: [3, 0, 2, 1] };
 	}
 }
 
@@ -23,71 +18,136 @@ impl Word {
 		'P', '0', 'B', '6', 'V', 'f', 'p', 'b', 'm', 'n', 'o', '1', 'R', 'r', 'L', 'l',
 	];
 
-	fn reset_letter(&mut self, index: usize) {
-		debug_assert!((0..self.word.len()).contains(&index));
+	// increments index letter and resets letters with lower index and makes sure all indexed letters dont have collisions
+	fn increment_index(&mut self, index: usize) {
+		debug_assert!(index < self.word.len());
 
 		// assert checked up there
-		*(unsafe { self.word.get_unchecked_mut(index) }) = match index {
-			0 => 3,
-			1 => 0,
-			2 => 2,
-			3 => 1,
-			_ => unsafe { unreachable_unchecked() } // assert checked up there
+		let letter = unsafe { self.word.get_unchecked_mut(index) };
+
+		// increment selected letter
+		*letter += 1;
+
+		// if we reached maximum character set to 0
+		if letter == &Self::CONSONANTS.len() {
+			*letter = 0;
 		}
-	}
 
-	// function to fix letter compared to rest of the word
-	fn fix_letter(&mut self, og_index: usize) {
-		debug_assert!((0..self.word.len()).contains(&og_index));
+		// reset all lower index letters
+		for (index, letter) in self.word.iter_mut().enumerate().skip(index + 1) {
+			// get default letter for position
+			// can not fail because we are looping through the same kind of structure
+			let default_word = unsafe { *Self::default().word.get_unchecked(index) };
+			*letter = default_word;
+		}
 
-		// fix up all letters
-		for index in og_index..self.word.len() {
-			// if we are fixing up the another letters then the one requested, reset it
-			if index > og_index {
-				self.reset_letter(index);
-			}
-
-			loop {
-				// assert checked up there
-				let index_letter = *(unsafe { self.word.get_unchecked(index) });
-
-				// make sure there is not a duplicate letter
-				if (index > 0 && self.word[0] == index_letter)
-					|| (index > 1 && self.word[1] == index_letter)
-					|| (index > 2 && self.word[2] == index_letter)
-					|| (index > 3 && self.word[3] == index_letter)
-				{
-					// assert checked up there
-					*(unsafe { self.word.get_unchecked_mut(index) }) += 1;
-				}
-				// go back to 0 if we reached the limit of available letters
-				else if index_letter >= Self::CONSONANTS.len() {
-					// assert checked up there
-					*(unsafe { self.word.get_unchecked_mut(index) }) = 0;
-				}
-				// if everything is fine break
-				else {
-					break;
+		// make sure we don't end up with collisions
+		// we loop through all letters with the index given and lower
+		'outer: for (index, outer_letter) in self.word.iter().enumerate().skip(index) {
+			// we loop through all letters higher then the current index
+			for inner_letter in self.word.iter().rev().skip(self.word.len() - index) {
+				// check if we found a collision
+				if inner_letter == outer_letter {
+					// increment letter we found collision on
+					self.increment_index(index);
+					// stop the whole thing because we go through it anyway now
+					// otherwise we would end up with an almost endless loop
+					break 'outer;
 				}
 			}
 		}
 	}
 
-	// increment and fix letter
-	pub fn increment_letter(&mut self, index: usize) {
-		debug_assert!((0..self.word.len()).contains(&index));
+	fn get_limit(&self, index: usize) -> usize {
+		// little convenience function
+		fn decrement_index(mut index: usize) -> usize {
+			if index == 0 {
+				index = Word::CONSONANTS.len();
+			}
 
-		// assert checked up there
-		*(unsafe { self.word.get_unchecked_mut(index) }) += 1;
-		self.fix_letter(index);
+			return index - 1;
+		}
+
+		debug_assert!(index < self.word.len());
+
+		// no limit if first letter, always return limit higher then current
+		if index == 0 {
+			return self.word[0] + 1;
+		}
+
+		// the closest limit is one character before the default
+		let mut limit = decrement_index(unsafe { *Self::default().word.get_unchecked(index) });
+
+		// then we have to check for collisions
+		'outer_loop: loop {
+			// we only want to check letters that are higher then the index given
+			for letter in self.word.iter().rev().skip(self.word.len() - index) {
+				// check if we found a collision
+				if &limit == letter {
+					// decrease limit by one step
+					limit = decrement_index(limit);
+					// and start checking from scratch again
+					continue 'outer_loop;
+				}
+			}
+
+			// if we found no collision - break
+			break;
+		}
+
+		return limit;
+	}
+
+	// increment by one word
+	pub fn increment_word(&mut self) {
+		// we want to search which letter reached its limit first - backwards
+		for (index, letter) in self.word.iter().enumerate().rev() {
+			// check if it reached its limit
+			if letter == &self.get_limit(index) {
+				// if it did, we need to go higher up!
+				continue;
+			}
+
+			// if we found the first letter then doesn't have a limit, increase it by one
+			self.increment_index(index);
+			// and break!
+			break;
+		}
+	}
+
+	// set to arbitrary position in the list
+	pub fn set_word(&mut self, index: usize) {
+		// reset word
+		self.word = Self::default().word;
+
+		// calculate amount of pages
+		let pages = index / ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3));
+
+		// loop through pages - but skip page 0 so we can do odd/even calculations properly
+		for page in 1..=pages {
+			// increment 1st letter every time we finish through the 2nd letter
+			// which is full length - 1
+			if page % (Self::CONSONANTS.len() - 1) == 0 {
+				self.increment_index(0);
+			}
+			// otherwise increment second letter
+			else {
+				self.increment_index(1);
+			}
+		}
+
+		// then get the rest of the indexes and increment them word by word
+		for _ in pages * ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3))..index {
+			self.increment_word();
+		}
 	}
 
 	pub fn to_string(&self) -> String {
 		// check out of bounds
-		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[0]));
-		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[1]));
-		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[2]));
-		debug_assert!((0..Self::CONSONANTS.len()).contains(&self.word[3]));
+		debug_assert!(self.word[0] < Self::CONSONANTS.len());
+		debug_assert!(self.word[1] < Self::CONSONANTS.len());
+		debug_assert!(self.word[2] < Self::CONSONANTS.len());
+		debug_assert!(self.word[3] < Self::CONSONANTS.len());
 
 		return format!(
 			"{}{}{}{}",
@@ -99,32 +159,41 @@ impl Word {
 		);
 	}
 
-	fn generate_form(&self, prefix: usize, suffix: usize, r_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
+	fn generate_form(&self, prefix: usize, suffix: usize, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
 		let mut forms: [String; 4] = Default::default();
+		let word = self.to_string();
 
+		// loop through the four possible forms
 		for (iter, vocals) in [('v', 'v'), ('v', 'y'), ('y', 'v'), ('y', 'y')].iter().enumerate() {
+			// we know that we only have four forms
 			let form = unsafe { forms.get_unchecked_mut(iter) };
-			*form = self.to_string();
-			let word_len = form.len();
-			let mut vocal_num = 2;
+			// save default word
+			*form = word.clone();
+			// do some sanity checks
+			debug_assert!(prefix + suffix + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.len());
 
-			debug_assert!(prefix + suffix <= word_len);
+			// insert first vocal
 			form.insert(prefix, vocals.0);
+			// insert second vocal - suffix is the amount of consonants from behind
 			form.insert(form.len() - suffix, vocals.1);
 
-			if let Some(r_infix) = r_infix {
-				debug_assert!(prefix + suffix + r_infix <= word_len);
-				vocal_num = 3;
-				form.insert(prefix + r_infix + 1, vocals.0);
+			// if there is a third vocal insert that too
+			if let Some(l_infix) = l_infix {
+				// l_infix is the amount of consonants between it and the first vocal
+				// so don't forget + 1 because we added the first vocal before already
+				// the third vocal uses the same character as the first one
+				form.insert(prefix + l_infix + 1, vocals.0);
 			}
 
+			// add the duplicate
 			if let Some(duplicate) = duplicate {
-				debug_assert!(duplicate <= word_len + vocal_num);
+				// sanity checks
+				debug_assert!(duplicate <= form.len() + if l_infix.is_some() { 3 } else { 2 });
 
-				unsafe {
-					let duplicate_letter = form.chars().nth(duplicate - 1).unchecked_unwrap();
-					form.insert(duplicate, duplicate_letter);
-				}
+				// the duplicate is the same character as the last character before it in the word
+				// we have an assert above
+				let duplicate_letter = unsafe { form.chars().nth(duplicate - 1).unchecked_unwrap() };
+				form.insert(duplicate, duplicate_letter);
 			}
 		}
 
@@ -158,16 +227,28 @@ impl Word {
 		let letters = [
 			Self::CONSONANTS
 				.iter()
-				.position(|letter| return letter == unsafe { &string.chars().nth(0).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+				.position(|letter| {
+					return letter == unsafe { &string.chars().nth(0).unchecked_unwrap() };
+				})
+				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
-				.position(|letter| return letter == unsafe { &string.chars().nth(1).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+				.position(|letter| {
+					return letter == unsafe { &string.chars().nth(1).unchecked_unwrap() };
+				})
+				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
-				.position(|letter| return letter == unsafe { &string.chars().nth(2).unchecked_unwrap() }).ok_or("Invalid letters.")?,
+				.position(|letter| {
+					return letter == unsafe { &string.chars().nth(2).unchecked_unwrap() };
+				})
+				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
-				.position(|letter| return letter == unsafe { &string.chars().nth(3).unchecked_unwrap() }).ok_or("Invalid letters.")?
+				.position(|letter| {
+					return letter == unsafe { &string.chars().nth(3).unchecked_unwrap() };
+				})
+				.ok_or("Invalid letters.")?
 		];
 
 		for (key_outer, letter_outer) in letters.iter().enumerate() {
@@ -181,5 +262,20 @@ impl Word {
 		return Ok(Self {
 			word: [letters[3], letters[0], letters[2], letters[1]]
 		});
+	}
+
+	pub fn get_word_index(&self) -> usize {
+		let mut word = Self::default();
+		let mut index = 0;
+
+		loop {
+			word.increment_word();
+			index += 1;
+			if &word == self {
+				break;
+			}
+		}
+
+		return index;
 	}
 }

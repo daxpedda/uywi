@@ -16,19 +16,21 @@ unchecked_unwrap = "0.9.0"
 [dependencies.web-sys]
 version = "0.3.6"
 features = [
-  "Document",
-  "Element",
-  "Event",
-  "EventTarget",
-  "HtmlButtonElement",
-  "HtmlCollection",
-  "HtmlElement",
-  "HtmlFormElement",
-  "HtmlInputElement",
-  "HtmlTableElement",
-  "HtmlTableRowElement",
-  "Node",
-  "Window"
+    "console",
+    "CssStyleDeclaration",
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlButtonElement",
+    "HtmlCollection",
+    "HtmlElement",
+    "HtmlFormElement",
+    "HtmlInputElement",
+    "HtmlTableElement",
+    "HtmlTableRowElement",
+    "Node",
+    "Window"
 ]
 
 [profile.release]

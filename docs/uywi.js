@@ -25,9 +25,24 @@
     * @param {any} arg0
     * @returns {void}
     */
-    __exports.load_page = function(arg0) {
+    __exports.display_page = function(arg0) {
         try {
-            return wasm.load_page(addBorrowedObject(arg0));
+            return wasm.display_page(addBorrowedObject(arg0));
+
+        } finally {
+            heap[stack_pointer++] = undefined;
+
+        }
+
+    };
+
+    /**
+    * @param {any} arg0
+    * @returns {void}
+    */
+    __exports.display_word = function(arg0) {
+        try {
+            return wasm.display_word(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
@@ -43,21 +58,6 @@
     __exports.check_word = function(arg0) {
         try {
             return wasm.check_word(addBorrowedObject(arg0));
-
-        } finally {
-            heap[stack_pointer++] = undefined;
-
-        }
-
-    };
-
-    /**
-    * @param {any} arg0
-    * @returns {void}
-    */
-    __exports.load_word = function(arg0) {
-        try {
-            return wasm.load_word(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
@@ -93,6 +93,18 @@ function getStringFromWasm(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
 
+const __widl_f_set_property_CSSStyleDeclaration_target = typeof CSSStyleDeclaration === 'undefined' ? null : CSSStyleDeclaration.prototype.setProperty || function() {
+    throw new Error(`wasm-bindgen: CSSStyleDeclaration.setProperty does not exist`);
+};
+
+let cachegetUint32Memory = null;
+function getUint32Memory() {
+    if (cachegetUint32Memory === null || cachegetUint32Memory.buffer !== wasm.memory.buffer) {
+        cachegetUint32Memory = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachegetUint32Memory;
+}
+
 let heap_next = heap.length;
 
 function addHeapObject(obj) {
@@ -104,17 +116,22 @@ function addHeapObject(obj) {
     return idx;
 }
 
+__exports.__widl_f_set_property_CSSStyleDeclaration = function(arg0, arg1, arg2, arg3, arg4, exnptr) {
+    let varg1 = getStringFromWasm(arg1, arg2);
+    let varg3 = getStringFromWasm(arg3, arg4);
+    try {
+        __widl_f_set_property_CSSStyleDeclaration_target.call(getObject(arg0), varg1, varg3);
+    } catch (e) {
+        const view = getUint32Memory();
+        view[exnptr / 4] = 1;
+        view[exnptr / 4 + 1] = addHeapObject(e);
+
+    }
+};
+
 const __widl_f_create_element_Document_target = typeof Document === 'undefined' ? null : Document.prototype.createElement || function() {
     throw new Error(`wasm-bindgen: Document.createElement does not exist`);
 };
-
-let cachegetUint32Memory = null;
-function getUint32Memory() {
-    if (cachegetUint32Memory === null || cachegetUint32Memory.buffer !== wasm.memory.buffer) {
-        cachegetUint32Memory = new Uint32Array(wasm.memory.buffer);
-    }
-    return cachegetUint32Memory;
-}
 
 __exports.__widl_f_create_element_Document = function(arg0, arg1, arg2, exnptr) {
     let varg1 = getStringFromWasm(arg1, arg2);
@@ -270,6 +287,14 @@ const __widl_f_set_inner_text_HTMLElement_target = GetOwnOrInheritedPropertyDesc
 __exports.__widl_f_set_inner_text_HTMLElement = function(arg0, arg1, arg2) {
     let varg1 = getStringFromWasm(arg1, arg2);
     __widl_f_set_inner_text_HTMLElement_target.call(getObject(arg0), varg1);
+};
+
+const __widl_f_style_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'style').get || function() {
+    throw new Error(`wasm-bindgen: HTMLElement.style does not exist`);
+};
+
+__exports.__widl_f_style_HTMLElement = function(arg0) {
+    return addHeapObject(__widl_f_style_HTMLElement_target.call(getObject(arg0)));
 };
 
 __exports.__widl_instanceof_HTMLFormElement = function(idx) {
