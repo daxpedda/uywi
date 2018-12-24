@@ -61,7 +61,7 @@ impl Word {
 	// little convenience function
 	fn decrement_index(mut index: usize) -> usize {
 		if index == 0 {
-			index = Word::CONSONANTS.len();
+			index = Self::CONSONANTS.len();
 		}
 
 		return index - 1;
@@ -115,7 +115,15 @@ impl Word {
 	}
 
 	// set to arbitrary position in the list
-	pub fn from_word_index(index: usize) -> Self {
+	pub fn from_word_index(mut index: usize) -> Self {
+		debug_assert!(
+			index > 0
+				&& index < (Self::CONSONANTS.len()) * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3)
+		);
+
+		// human index is not the same as machine index
+		index -= 1;
+
 		// reset word
 		let mut word = Self::default();
 
@@ -295,6 +303,7 @@ impl Word {
 			}
 		}
 
-		return word_index;
+		// + 1 because human index is not the same as machine index
+		return word_index + 1;
 	}
 }
