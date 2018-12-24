@@ -188,7 +188,7 @@ pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
 				.dyn_into::<web_sys::HtmlFormElement>()?
 				.get_with_name("index") // get page input
 				.dyn_into::<web_sys::HtmlInputElement>()?
-				.set_value_as_number(index as f64); // clicking on it triggers onsubmit(event)
+				.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
 			return load_page(pages, &Some(word));
 		},
@@ -211,7 +211,7 @@ pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		.dyn_into::<web_sys::HtmlFormElement>()?
 		.get_with_name("index") // get input field
 		.dyn_into::<web_sys::HtmlInputElement>()?
-		.value_as_number() as usize;
+		.value_as_number() as usize - 1;
 
 	let word = Word::from_word_index(index);
 	let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
@@ -289,7 +289,7 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 		.dyn_into::<web_sys::HtmlFormElement>()?
 		.get_with_name("index") // get page input
 		.dyn_into::<web_sys::HtmlInputElement>()?
-		.set_value_as_number(index as f64); // clicking on it triggers onsubmit(event)
+		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
 	for form in &forms {
 		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
