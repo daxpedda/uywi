@@ -97,10 +97,6 @@ function getStringFromWasm(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
 
-const __widl_f_set_property_CSSStyleDeclaration_target = typeof CSSStyleDeclaration === 'undefined' ? null : CSSStyleDeclaration.prototype.setProperty || function() {
-    throw new Error(`wasm-bindgen: CSSStyleDeclaration.setProperty does not exist`);
-};
-
 let cachegetUint32Memory = null;
 function getUint32Memory() {
     if (cachegetUint32Memory === null || cachegetUint32Memory.buffer !== wasm.memory.buffer) {
@@ -124,7 +120,7 @@ __exports.__widl_f_set_property_CSSStyleDeclaration = function(arg0, arg1, arg2,
     let varg1 = getStringFromWasm(arg1, arg2);
     let varg3 = getStringFromWasm(arg3, arg4);
     try {
-        __widl_f_set_property_CSSStyleDeclaration_target.call(getObject(arg0), varg1, varg3);
+        getObject(arg0).setProperty(varg1, varg3);
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -133,14 +129,10 @@ __exports.__widl_f_set_property_CSSStyleDeclaration = function(arg0, arg1, arg2,
     }
 };
 
-const __widl_f_create_element_Document_target = typeof Document === 'undefined' ? null : Document.prototype.createElement || function() {
-    throw new Error(`wasm-bindgen: Document.createElement does not exist`);
-};
-
 __exports.__widl_f_create_element_Document = function(arg0, arg1, arg2, exnptr) {
     let varg1 = getStringFromWasm(arg1, arg2);
     try {
-        return addHeapObject(__widl_f_create_element_Document_target.call(getObject(arg0), varg1));
+        return addHeapObject(getObject(arg0).createElement(varg1));
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -153,14 +145,10 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 
-const __widl_f_get_element_by_id_Document_target = typeof Document === 'undefined' ? null : Document.prototype.getElementById || function() {
-    throw new Error(`wasm-bindgen: Document.getElementById does not exist`);
-};
-
 __exports.__widl_f_get_element_by_id_Document = function(arg0, arg1, arg2) {
     let varg1 = getStringFromWasm(arg1, arg2);
 
-    const val = __widl_f_get_element_by_id_Document_target.call(getObject(arg0), varg1);
+    const val = getObject(arg0).getElementById(varg1);
     return isLikeNone(val) ? 0 : addHeapObject(val);
 
 };
@@ -178,22 +166,9 @@ function passStringToWasm(arg) {
     return ptr;
 }
 
-function GetOwnOrInheritedPropertyDescriptor(obj, id) {
-    while (obj) {
-        let desc = Object.getOwnPropertyDescriptor(obj, id);
-        if (desc) return desc;
-        obj = Object.getPrototypeOf(obj);
-    }
-return {}
-}
-
-const __widl_f_ready_state_Document_target = GetOwnOrInheritedPropertyDescriptor(typeof Document === 'undefined' ? null : Document.prototype, 'readyState').get || function() {
-    throw new Error(`wasm-bindgen: Document.readyState does not exist`);
-};
-
 __exports.__widl_f_ready_state_Document = function(ret, arg0) {
 
-    const retptr = passStringToWasm(__widl_f_ready_state_Document_target.call(getObject(arg0)));
+    const retptr = passStringToWasm(getObject(arg0).readyState);
     const retlen = WASM_VECTOR_LEN;
     const mem = getUint32Memory();
     mem[ret / 4] = retptr;
@@ -201,31 +176,19 @@ __exports.__widl_f_ready_state_Document = function(ret, arg0) {
 
 };
 
-const __widl_f_forms_Document_target = GetOwnOrInheritedPropertyDescriptor(typeof Document === 'undefined' ? null : Document.prototype, 'forms').get || function() {
-    throw new Error(`wasm-bindgen: Document.forms does not exist`);
-};
-
 __exports.__widl_f_forms_Document = function(arg0) {
-    return addHeapObject(__widl_f_forms_Document_target.call(getObject(arg0)));
-};
-
-const __widl_f_set_onload_Document_target = GetOwnOrInheritedPropertyDescriptor(typeof Document === 'undefined' ? null : Document.prototype, 'onload').set || function() {
-    throw new Error(`wasm-bindgen: Document.onload does not exist`);
+    return addHeapObject(getObject(arg0).forms);
 };
 
 __exports.__widl_f_set_onload_Document = function(arg0, arg1) {
-    __widl_f_set_onload_Document_target.call(getObject(arg0), getObject(arg1));
-};
-
-const __widl_f_set_attribute_Element_target = typeof Element === 'undefined' ? null : Element.prototype.setAttribute || function() {
-    throw new Error(`wasm-bindgen: Element.setAttribute does not exist`);
+    getObject(arg0).onload = getObject(arg1);
 };
 
 __exports.__widl_f_set_attribute_Element = function(arg0, arg1, arg2, arg3, arg4, exnptr) {
     let varg1 = getStringFromWasm(arg1, arg2);
     let varg3 = getStringFromWasm(arg3, arg4);
     try {
-        __widl_f_set_attribute_Element_target.call(getObject(arg0), varg1, varg3);
+        getObject(arg0).setAttribute(varg1, varg3);
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -234,21 +197,13 @@ __exports.__widl_f_set_attribute_Element = function(arg0, arg1, arg2, arg3, arg4
     }
 };
 
-const __widl_f_prevent_default_Event_target = typeof Event === 'undefined' ? null : Event.prototype.preventDefault || function() {
-    throw new Error(`wasm-bindgen: Event.preventDefault does not exist`);
-};
-
 __exports.__widl_f_prevent_default_Event = function(arg0) {
-    __widl_f_prevent_default_Event_target.call(getObject(arg0));
-};
-
-const __widl_f_target_Event_target = GetOwnOrInheritedPropertyDescriptor(typeof Event === 'undefined' ? null : Event.prototype, 'target').get || function() {
-    throw new Error(`wasm-bindgen: Event.target does not exist`);
+    getObject(arg0).preventDefault();
 };
 
 __exports.__widl_f_target_Event = function(arg0) {
 
-    const val = __widl_f_target_Event_target.call(getObject(arg0));
+    const val = getObject(arg0).target;
     return isLikeNone(val) ? 0 : addHeapObject(val);
 
 };
@@ -264,49 +219,29 @@ __exports.__widl_f_get_with_index_HTMLCollection = function(arg0, arg1) {
 
 };
 
-const __widl_f_length_HTMLCollection_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLCollection === 'undefined' ? null : HTMLCollection.prototype, 'length').get || function() {
-    throw new Error(`wasm-bindgen: HTMLCollection.length does not exist`);
-};
-
 __exports.__widl_f_length_HTMLCollection = function(arg0) {
-    return __widl_f_length_HTMLCollection_target.call(getObject(arg0));
+    return getObject(arg0).length;
 };
 
 __exports.__widl_instanceof_HTMLElement = function(idx) {
     return getObject(idx) instanceof HTMLElement ? 1 : 0;
 };
 
-const __widl_f_click_HTMLElement_target = typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype.click || function() {
-    throw new Error(`wasm-bindgen: HTMLElement.click does not exist`);
-};
-
 __exports.__widl_f_click_HTMLElement = function(arg0) {
-    __widl_f_click_HTMLElement_target.call(getObject(arg0));
-};
-
-const __widl_f_set_inner_text_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'innerText').set || function() {
-    throw new Error(`wasm-bindgen: HTMLElement.innerText does not exist`);
+    getObject(arg0).click();
 };
 
 __exports.__widl_f_set_inner_text_HTMLElement = function(arg0, arg1, arg2) {
     let varg1 = getStringFromWasm(arg1, arg2);
-    __widl_f_set_inner_text_HTMLElement_target.call(getObject(arg0), varg1);
-};
-
-const __widl_f_style_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'style').get || function() {
-    throw new Error(`wasm-bindgen: HTMLElement.style does not exist`);
+    getObject(arg0).innerText = varg1;
 };
 
 __exports.__widl_f_style_HTMLElement = function(arg0) {
-    return addHeapObject(__widl_f_style_HTMLElement_target.call(getObject(arg0)));
-};
-
-const __widl_f_set_onclick_HTMLElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLElement === 'undefined' ? null : HTMLElement.prototype, 'onclick').set || function() {
-    throw new Error(`wasm-bindgen: HTMLElement.onclick does not exist`);
+    return addHeapObject(getObject(arg0).style);
 };
 
 __exports.__widl_f_set_onclick_HTMLElement = function(arg0, arg1) {
-    __widl_f_set_onclick_HTMLElement_target.call(getObject(arg0), getObject(arg1));
+    getObject(arg0).onclick = getObject(arg1);
 };
 
 __exports.__widl_instanceof_HTMLFormElement = function(idx) {
@@ -322,30 +257,18 @@ __exports.__widl_instanceof_HTMLInputElement = function(idx) {
     return getObject(idx) instanceof HTMLInputElement ? 1 : 0;
 };
 
-const __widl_f_check_validity_HTMLInputElement_target = typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype.checkValidity || function() {
-    throw new Error(`wasm-bindgen: HTMLInputElement.checkValidity does not exist`);
-};
-
 __exports.__widl_f_check_validity_HTMLInputElement = function(arg0) {
-    return __widl_f_check_validity_HTMLInputElement_target.call(getObject(arg0));
-};
-
-const __widl_f_set_custom_validity_HTMLInputElement_target = typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype.setCustomValidity || function() {
-    throw new Error(`wasm-bindgen: HTMLInputElement.setCustomValidity does not exist`);
+    return getObject(arg0).checkValidity();
 };
 
 __exports.__widl_f_set_custom_validity_HTMLInputElement = function(arg0, arg1, arg2) {
     let varg1 = getStringFromWasm(arg1, arg2);
-    __widl_f_set_custom_validity_HTMLInputElement_target.call(getObject(arg0), varg1);
-};
-
-const __widl_f_value_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'value').get || function() {
-    throw new Error(`wasm-bindgen: HTMLInputElement.value does not exist`);
+    getObject(arg0).setCustomValidity(varg1);
 };
 
 __exports.__widl_f_value_HTMLInputElement = function(ret, arg0) {
 
-    const retptr = passStringToWasm(__widl_f_value_HTMLInputElement_target.call(getObject(arg0)));
+    const retptr = passStringToWasm(getObject(arg0).value);
     const retlen = WASM_VECTOR_LEN;
     const mem = getUint32Memory();
     mem[ret / 4] = retptr;
@@ -353,48 +276,32 @@ __exports.__widl_f_value_HTMLInputElement = function(ret, arg0) {
 
 };
 
-const __widl_f_value_as_number_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'valueAsNumber').get || function() {
-    throw new Error(`wasm-bindgen: HTMLInputElement.valueAsNumber does not exist`);
-};
-
 __exports.__widl_f_value_as_number_HTMLInputElement = function(arg0) {
-    return __widl_f_value_as_number_HTMLInputElement_target.call(getObject(arg0));
-};
-
-const __widl_f_set_value_as_number_HTMLInputElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLInputElement === 'undefined' ? null : HTMLInputElement.prototype, 'valueAsNumber').set || function() {
-    throw new Error(`wasm-bindgen: HTMLInputElement.valueAsNumber does not exist`);
+    return getObject(arg0).valueAsNumber;
 };
 
 __exports.__widl_f_set_value_as_number_HTMLInputElement = function(arg0, arg1) {
-    __widl_f_set_value_as_number_HTMLInputElement_target.call(getObject(arg0), arg1);
+    getObject(arg0).valueAsNumber = arg1;
 };
 
 __exports.__widl_instanceof_HTMLTableElement = function(idx) {
     return getObject(idx) instanceof HTMLTableElement ? 1 : 0;
 };
 
-const __widl_f_delete_row_HTMLTableElement_target = typeof HTMLTableElement === 'undefined' ? null : HTMLTableElement.prototype.deleteRow || function() {
-    throw new Error(`wasm-bindgen: HTMLTableElement.deleteRow does not exist`);
-};
-
 __exports.__widl_f_delete_row_HTMLTableElement = function(arg0, arg1, exnptr) {
     try {
-        __widl_f_delete_row_HTMLTableElement_target.call(getObject(arg0), arg1);
+        getObject(arg0).deleteRow(arg1);
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
         view[exnptr / 4 + 1] = addHeapObject(e);
 
     }
-};
-
-const __widl_f_insert_row_HTMLTableElement_target = typeof HTMLTableElement === 'undefined' ? null : HTMLTableElement.prototype.insertRow || function() {
-    throw new Error(`wasm-bindgen: HTMLTableElement.insertRow does not exist`);
 };
 
 __exports.__widl_f_insert_row_HTMLTableElement = function(arg0, exnptr) {
     try {
-        return addHeapObject(__widl_f_insert_row_HTMLTableElement_target.call(getObject(arg0)));
+        return addHeapObject(getObject(arg0).insertRow());
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -403,25 +310,17 @@ __exports.__widl_f_insert_row_HTMLTableElement = function(arg0, exnptr) {
     }
 };
 
-const __widl_f_rows_HTMLTableElement_target = GetOwnOrInheritedPropertyDescriptor(typeof HTMLTableElement === 'undefined' ? null : HTMLTableElement.prototype, 'rows').get || function() {
-    throw new Error(`wasm-bindgen: HTMLTableElement.rows does not exist`);
-};
-
 __exports.__widl_f_rows_HTMLTableElement = function(arg0) {
-    return addHeapObject(__widl_f_rows_HTMLTableElement_target.call(getObject(arg0)));
+    return addHeapObject(getObject(arg0).rows);
 };
 
 __exports.__widl_instanceof_HTMLTableRowElement = function(idx) {
     return getObject(idx) instanceof HTMLTableRowElement ? 1 : 0;
 };
 
-const __widl_f_insert_cell_HTMLTableRowElement_target = typeof HTMLTableRowElement === 'undefined' ? null : HTMLTableRowElement.prototype.insertCell || function() {
-    throw new Error(`wasm-bindgen: HTMLTableRowElement.insertCell does not exist`);
-};
-
 __exports.__widl_f_insert_cell_HTMLTableRowElement = function(arg0, exnptr) {
     try {
-        return addHeapObject(__widl_f_insert_cell_HTMLTableRowElement_target.call(getObject(arg0)));
+        return addHeapObject(getObject(arg0).insertCell());
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -430,13 +329,9 @@ __exports.__widl_f_insert_cell_HTMLTableRowElement = function(arg0, exnptr) {
     }
 };
 
-const __widl_f_append_child_Node_target = typeof Node === 'undefined' ? null : Node.prototype.appendChild || function() {
-    throw new Error(`wasm-bindgen: Node.appendChild does not exist`);
-};
-
 __exports.__widl_f_append_child_Node = function(arg0, arg1, exnptr) {
     try {
-        return addHeapObject(__widl_f_append_child_Node_target.call(getObject(arg0), getObject(arg1)));
+        return addHeapObject(getObject(arg0).appendChild(getObject(arg1)));
     } catch (e) {
         const view = getUint32Memory();
         view[exnptr / 4] = 1;
@@ -456,12 +351,12 @@ __exports.__widl_f_document_Window = function(arg0) {
 
 };
 
-__exports.__wbg_newnoargs_6a80f84471205fc8 = function(arg0, arg1) {
+__exports.__wbg_newnoargs_970ffcd96c15d34e = function(arg0, arg1) {
     let varg0 = getStringFromWasm(arg0, arg1);
     return addHeapObject(new Function(varg0));
 };
 
-__exports.__wbg_call_582b20dfcad7fee4 = function(arg0, arg1, exnptr) {
+__exports.__wbg_call_6ecd167e59b01396 = function(arg0, arg1, exnptr) {
     try {
         return addHeapObject(getObject(arg0).call(getObject(arg1)));
     } catch (e) {
@@ -501,10 +396,10 @@ __exports.__wbindgen_rethrow = function(idx) { throw takeObject(idx); };
 __exports.__wbindgen_closure_wrapper12 = function(a, b, _ignored) {
     const f = wasm.__wbg_function_table.get(2);
     const d = wasm.__wbg_function_table.get(3);
-    const cb = function(arg0) {
+    const cb = function() {
         this.cnt++;
         try {
-            return f(this.a, b, addHeapObject(arg0));
+            return f(this.a, b);
 
         } finally {
             if (this.cnt-- == 1) d(this.a, b);
@@ -522,10 +417,10 @@ __exports.__wbindgen_closure_wrapper12 = function(a, b, _ignored) {
 __exports.__wbindgen_closure_wrapper14 = function(a, b, _ignored) {
     const f = wasm.__wbg_function_table.get(6);
     const d = wasm.__wbg_function_table.get(7);
-    const cb = function() {
+    const cb = function(arg0) {
         this.cnt++;
         try {
-            return f(this.a, b);
+            return f(this.a, b, addHeapObject(arg0));
 
         } finally {
             if (this.cnt-- == 1) d(this.a, b);

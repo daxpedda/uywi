@@ -15,7 +15,7 @@ impl Default for Word {
 impl Word {
 	pub const CONSONANTS: [char; 44] = [
 		'?', 'Y', 'w', 'h', '2', 'H', 'K', 'k', 'X', 'x', '8', '4', 'G', 'g', 'j', '7', '3', 'Q', 'c', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
-		'P', '0', 'B', '6', 'V', 'f', 'p', 'b', 'm', 'n', 'o', '1', 'R', 'r', 'L', 'l',
+		'P', '0', 'B', '6', 'V', 'f', 'p', 'b', 'm', 'n', 'O', '1', 'R', 'r', 'L', 'l',
 	];
 
 	// increments index letter and resets letters with lower index and makes sure all indexed letters dont have collisions
@@ -172,7 +172,7 @@ impl Word {
 		let word = self.to_string();
 
 		// loop through the four possible forms
-		for (iter, vocals) in [('v', 'v'), ('v', 'y'), ('y', 'v'), ('y', 'y')].iter().enumerate() {
+		for (iter, vocals) in [('o', 'o'), ('o', 'ı'), ('ı', 'o'), ('ı', 'ı')].iter().enumerate() {
 			// we know that we only have four forms
 			let form = unsafe { forms.get_unchecked_mut(iter) };
 			// save default word
@@ -281,16 +281,18 @@ impl Word {
 
 	// get word from word index
 	pub fn get_word_index(&self) -> usize {
+		// we start at the beginning
 		let mut search_word = Self::default();
 		let mut word_index = 0;
+		// the amount of words we skip in every iteration
 		let mut multiplier = Self::CONSONANTS.len() * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3);
 
-		for index in 0..search_word.word.len() {
+		for (index, search_letter) in search_word.word.clone().iter().enumerate() {
 			let letter = *unsafe { self.word.get_unchecked(index) };
 			multiplier /= Self::CONSONANTS.len() - index;
 
 			loop {
-				if unsafe { search_word.word.get_unchecked(index) } == &letter {
+				if search_letter == &letter {
 					break;
 				}
 				else {

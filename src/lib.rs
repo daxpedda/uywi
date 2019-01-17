@@ -1,5 +1,5 @@
 #![no_std]
-#![feature(type_ascription, uniform_paths, try_blocks, alloc)]
+#![feature(type_ascription, try_blocks, alloc)]
 #![warn(
 	clippy::cargo, // rls being weird
 	clippy::pedantic,
