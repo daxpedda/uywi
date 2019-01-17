@@ -255,7 +255,7 @@ pub fn check_concept(event: &web_sys::Event) -> Result<(), JsValue> {
 	return Ok(());
 }
 
-fn display_forms(event: &web_sys::Event, index_form: usize) -> Result<(), JsValue> {
+fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
 	// prevent link from navigating to sommewhere else
 	event.prevent_default();
 
@@ -277,7 +277,7 @@ fn display_forms(event: &web_sys::Event, index_form: usize) -> Result<(), JsValu
 	}
 
 	// prepare forms
-	let forms = Concept::from_concept_index(index_form).generate_forms();
+	let forms = Concept::from_concept_index(index).generate_forms();
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -289,9 +289,9 @@ fn display_forms(event: &web_sys::Event, index_form: usize) -> Result<(), JsValu
 		.dyn_into::<web_sys::HtmlFormElement>()?
 		.get_with_name("index") // get page input
 		.dyn_into::<web_sys::HtmlInputElement>()?
-		.set_value_as_number((index_form + 1) as f64); // clicking on it triggers onsubmit(event)
+		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-	for form in &forms {
+	for (index_form, form) in forms.iter().enumerate() {
 		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
 		for (index_stem, form) in form.iter().enumerate() {

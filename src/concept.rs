@@ -292,28 +292,16 @@ impl Concept {
 		return form;
 	}
 
-	// redirection to generate_stem_or_intonation for stems
-	fn generate_stem(&self, prefix: &str, suffix: &str, l_infix: Option<usize>, duplicate: Option<usize>) -> String {
-		return self.generate_stem_or_intonation(prefix, suffix, l_infix, duplicate, None);
-	}
-
-	// generate all four stems of a form
-	fn generate_stems(&self, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
-		let mut stems: [String; 4] = Default::default();
-
-		for ((prefix, suffix), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut()) {
-			**stem = self.generate_stem(prefix, suffix, l_infix, duplicate);
-		}
-
-		return stems;
-	}
-
 	// generate all forms within a concept and return them
 	pub fn generate_forms(&self) -> [[String; 4]; 8] {
 		let mut forms: [[String; 4]; 8] = Default::default();
 
+		// loop through all forms
 		for ((l_infix, duplicate, _), ref mut form) in Self::FORMS.iter().zip(forms.iter_mut()) {
-			**form = self.generate_stems(*l_infix, *duplicate);
+			// loop through all stems
+			for ((prefix, suffix), ref mut stem) in Self::STEMS.iter().zip(form.iter_mut()) {
+				**stem = self.generate_stem_or_intonation(prefix, suffix, *l_infix, *duplicate, None);
+			}
 		}
 
 		return forms;
@@ -325,11 +313,15 @@ impl Concept {
 		debug_assert!(index_stem < Self::STEMS.len());
 
 		let mut intonations: [String; 9] = Default::default();
+		// sanity checks up there
+		// unpacking needed details
 		let (l_infix, duplicate, suffix_accented_bool) = unsafe { Self::FORMS.get_unchecked(index_form) };
 		let (prefix, suffix) = unsafe { Self::STEMS.get_unchecked(index_stem) };
 
+		// loop through all intonations
 		for ((prefix_accented, suffix_accented), intonation) in Self::INTONATIONS
 			.iter()
+			// filtering out unneeded vocal-intonation mappings
 			.map(|((prefix_0, prefix_1), (suffix_0, suffix_1))| {
 				return (
 					if *prefix == Self::INTONATIONS_MAP.0 { prefix_0 } else { prefix_1 },
