@@ -1,5 +1,5 @@
-//#![no_std]
-#![feature(type_ascription, try_blocks, alloc)]
+#![no_std]
+#![feature(type_ascription, try_blocks, alloc, slice_concat_ext)]
 #![warn(
 	clippy::cargo, // rls being weird
 	clippy::pedantic,
@@ -25,15 +25,14 @@ mod word;
 use word::Word;
 
 use alloc::boxed::Box;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
-	std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+	//std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
 	// get document
 	let document = web_sys::window()
@@ -211,7 +210,8 @@ pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		.dyn_into::<web_sys::HtmlFormElement>()?
 		.get_with_name("index") // get input field
 		.dyn_into::<web_sys::HtmlInputElement>()?
-		.value_as_number() as usize - 1;
+		.value_as_number() as usize
+		- 1;
 
 	let word = Word::from_word_index(index);
 	let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;

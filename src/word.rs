@@ -1,4 +1,8 @@
-use alloc::string::String;
+use alloc::{
+	slice::SliceConcatExt,
+	string::{String, ToString},
+	vec::Vec
+};
 use unchecked_unwrap::*;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -13,10 +17,48 @@ impl Default for Word {
 	}
 }
 
+trait GraphemeStr {
+	fn grapheme_len(&self) -> usize;
+
+	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str>;
+}
+
+impl GraphemeStr for str {
+	fn grapheme_len(&self) -> usize {
+		return self.graphemes(true).size_hint().0;
+	}
+
+	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
+		return self.graphemes(true).nth(n);
+	}
+}
+
+impl GraphemeStr for String {
+	fn grapheme_len(&self) -> usize {
+		return self.graphemes(true).size_hint().0;
+	}
+
+	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
+		return self.graphemes(true).nth(n);
+	}
+}
+
+trait GraphemeString {
+	fn grapheme_insert(&mut self, idx: usize, string: &str);
+}
+
+impl GraphemeString for String {
+	fn grapheme_insert(&mut self, idx: usize, string: &str) {
+		let mut vec = self.graphemes(true).collect(): Vec<&str>;
+		vec.insert(idx, string);
+		*self = vec.concat();
+	}
+}
+
 impl Word {
-	pub const CONSONANTS: [char; 44] = [
-		'?', 'Y', 'w', 'h', '2', 'H', 'K', 'k', 'X', 'x', '8', '4', 'G', 'g', 'j', '7', '3', 'Q', 'c', '9', 'S', 's', 'Z', 'z', 'D', 'd', 'T', 't',
-		'P', '0', 'B', '6', 'V', 'f', 'p', 'b', 'm', 'n', 'O', '1', 'R', 'r', 'L', 'l',
+	pub const CONSONANTS: [&'static str; 44] = [
+		"?", "Y", "w", "h", "2", "H", "K", "k", "X", "x", "8", "4", "G", "g", "j", "7", "3", "Q", "c", "9", "S", "s", "Z", "z", "D", "d", "T", "t",
+		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
 	// increments index letter and resets letters with lower index and makes sure all indexed letters dont have collisions
@@ -68,7 +110,7 @@ impl Word {
 		return index - 1;
 	}
 
-	// functio to calculate character limit every letter can reach
+	// function to calculate character limit every letter can reach
 	// checks for collisions are built-in
 	fn get_limit(&self, index: usize) -> usize {
 		// sanity check
@@ -176,32 +218,30 @@ impl Word {
 			// save default word
 			*form = word.clone();
 			// do some sanity checks
-			debug_assert!(prefix + suffix + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.len());
+			debug_assert!(prefix + suffix + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.grapheme_len());
 
 			// insert first vocal
-			form.insert_str(prefix, vocals.0);
+			form.grapheme_insert(prefix, vocals.0);
 			// insert second vocal - suffix is the amount of consonants from behind
-			form.insert_str(form.len() - suffix, vocals.1);
+			form.grapheme_insert(form.grapheme_len() - suffix, vocals.1);
 
 			// if there is a third vocal insert that too
 			if let Some(l_infix) = l_infix {
 				// l_infix is the amount of consonants between it and the first vocal
 				// so don't forget + 1 because we added the first vocal before already
 				// the third vocal uses the same character as the first one
-				form.insert_str(prefix + l_infix + 1, vocals.0);
+				form.grapheme_insert(prefix + l_infix + 1, vocals.0);
 			}
 
 			// add the duplicate
 			if let Some(duplicate) = duplicate {
 				// sanity checks
-				debug_assert!(duplicate <= form.len() + if l_infix.is_some() { 3 } else { 2 });
+				debug_assert!(duplicate <= form.grapheme_len() + if l_infix.is_some() { 3 } else { 2 });
 
 				// the duplicate is the same character as the last character before it in the word
 				// we have an assert above
-				let duplicate_letter = unsafe { form.graphemes(true).nth(duplicate - 1).unchecked_unwrap().to_string() };
-				let mut vec = form.graphemes(true).collect::<Vec<&str>>();
-				vec.insert(duplicate, &duplicate_letter);
-				*form = vec.concat();
+				let duplicate_letter = unsafe { form.grapheme_nth(duplicate - 1).unchecked_unwrap().to_string() };
+				form.grapheme_insert(duplicate, &duplicate_letter);
 			}
 		}
 
@@ -227,7 +267,7 @@ impl Word {
 	// build word from string
 	pub fn from_string(string: &str) -> Result<Self, &str> {
 		// sanity check
-		debug_assert!(string.len() == Self::default().word.len());
+		debug_assert!(string.grapheme_len() == Self::default().word.len());
 
 		// insert letters
 		// we did assert above, no run-time checks needed - except for invalid letters
@@ -235,25 +275,25 @@ impl Word {
 			Self::CONSONANTS
 				.iter()
 				.position(|letter| {
-					return letter == unsafe { &string.chars().nth(0).unchecked_unwrap() };
+					return letter == unsafe { &string.grapheme_nth(0).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
 				.position(|letter| {
-					return letter == unsafe { &string.chars().nth(1).unchecked_unwrap() };
+					return letter == unsafe { &string.grapheme_nth(1).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
 				.position(|letter| {
-					return letter == unsafe { &string.chars().nth(2).unchecked_unwrap() };
+					return letter == unsafe { &string.grapheme_nth(2).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
 			Self::CONSONANTS
 				.iter()
 				.position(|letter| {
-					return letter == unsafe { &string.chars().nth(3).unchecked_unwrap() };
+					return letter == unsafe { &string.grapheme_nth(3).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?
 		];
