@@ -287,12 +287,12 @@ impl Word {
 		// the amount of words we skip in every iteration
 		let mut multiplier = Self::CONSONANTS.len() * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3);
 
-		for (index, search_letter) in search_word.word.clone().iter().enumerate() {
+		for index in 0..search_word.word.len() {
 			let letter = *unsafe { self.word.get_unchecked(index) };
 			multiplier /= Self::CONSONANTS.len() - index;
 
 			loop {
-				if search_letter == &letter {
+				if unsafe { search_word.word.get_unchecked(index) } == &letter {
 					break;
 				}
 				else {
