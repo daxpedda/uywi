@@ -55,24 +55,40 @@ impl GraphemeString for String {
 	}
 }
 
+type VocalsPair = (&'static str, &'static str);
+
 impl Concept {
 	pub const CONSONANTS: [&'static str; 44] = [
 		"?", "Y", "w", "h", "2", "H", "K", "k", "X", "x", "8", "4", "G", "g", "j", "7", "3", "Q", "c", "9", "S", "s", "Z", "z", "D", "d", "T", "t",
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
-	const FORMS: [(Option<usize>, Option<usize>); 8] = [
-		(None, None),
-		(None, Some(3)),
-		(None, Some(2)),
-		(None, Some(5)),
-		(None, Some(6)),
-		(Some(1), Some(4)),
-		(Some(1), Some(5)),
-		(Some(1), Some(6))
+	const FORMS: [(Option<usize>, Option<usize>, bool); 8] = [
+		(None, None, true),
+		(None, Some(3), true),
+		(None, Some(2), true),
+		(None, Some(5), true),
+		(None, Some(6), true),
+		(Some(1), Some(4), false),
+		(Some(1), Some(5), false),
+		(Some(1), Some(6), true)
 	];
 
-	const STEMS: [(&'static str, &'static str); 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
+	const STEMS: [VocalsPair; 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
+
+	const INTONATIONS_MAP: VocalsPair = ("o", "ı");
+
+	const INTONATIONS: [(VocalsPair, VocalsPair); 9] = [
+		(("ò", "ì"), ("ò", "ì")),
+		(("ò", "ì"), ("ó", "í")),
+		(("ó", "í"), ("ò", "ì")),
+		(("ò", "ì"), ("ō", "ī")),
+		(("ō", "ī"), ("ò", "ì")),
+		(("ó", "í"), ("ó", "í")),
+		(("ó", "í"), ("ō", "ī")),
+		(("ō", "ī"), ("ó", "í")),
+		(("ō", "ī"), ("ō", "ī"))
+	];
 
 	// increments index letter and resets letters with lower index and makes sure all indexed letters don't have collisions
 	fn increment_index(&mut self, index: usize) {
@@ -90,26 +106,34 @@ impl Concept {
 		}
 
 		// reset all lower index letters
-		for (index, letter) in self.concept.iter_mut().enumerate().skip(index + 1) {
+		for (letter, reset_letter) in self
+			.concept
+			.iter_mut()
+			.skip(index + 1)
 			// get default letter for position
-			// can not fail because we are looping through the same kind of structure
-			let default_concept = unsafe { *Self::default().concept.get_unchecked(index) };
-			*letter = default_concept;
+			.zip(Self::default().concept.iter().skip(index + 1))
+		{
+			*letter = *reset_letter;
 		}
 
 		// make sure we don't end up with collisions
 		// we loop through all letters with the index given and lower
 		'outer: for (index, outer_letter) in self.concept.iter().enumerate().skip(index) {
 			// we loop through all letters higher then the current index
-			for inner_letter in self.concept.iter().rev().skip(self.concept.len() - index) {
+			if self
+				.concept
+				.iter()
+				.enumerate()
+				.filter(|(inner_index, _)| return *inner_index < index)
+				.rev()
 				// check if we found a collision
-				if inner_letter == outer_letter {
-					// increment letter we found collision on
-					self.increment_index(index);
-					// stop the whole thing because we go through it anyway now
-					// otherwise we would end up with an almost endless loop
-					break 'outer;
-				}
+				.any(|(_, inner_letter)| return inner_letter == outer_letter)
+			{
+				// increment letter we found collision on
+				self.increment_index(index);
+				// stop the whole thing because we go through it anyway now
+				// otherwise we would end up with an almost endless loop
+				break 'outer;
 			}
 		}
 	}
@@ -219,24 +243,39 @@ impl Concept {
 		);
 	}
 
-	// generate the four forms to a stem
-	fn generate_stem(&self, prefix: &str, suffix: &str, l_infix: Option<usize>, duplicate: Option<usize>) -> String {
+	// generate a stem or intonation
+	fn generate_stem_or_intonation(
+		&self,
+		prefix: &str,
+		suffix: &str,
+		l_infix: Option<usize>,
+		duplicate: Option<usize>,
+		intonation: Option<(&str, &str, bool)>
+	) -> String {
+		// unpack intonations
+		let (intonation, (prefix_accented, suffix_accented, suffix_accented_bool)) = if let Some(intonation) = intonation {
+			(true, intonation)
+		}
+		else {
+			(false, ("", "", false))
+		};
+
 		// save default concept
 		let mut form = self.to_string();
 		// do some sanity checks
 		debug_assert!(2 + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.grapheme_len());
 
 		// insert first vocal
-		form.grapheme_insert(1, prefix);
+		form.grapheme_insert(1, if intonation { prefix_accented } else { prefix });
 		// insert second vocal - suffix is the amount of consonants from behind
-		form.grapheme_insert(form.grapheme_len() - 1, suffix);
+		form.grapheme_insert(form.grapheme_len() - 1, if suffix_accented_bool { suffix_accented } else { suffix });
 
 		// if there is a third vocal insert that too
 		if let Some(l_infix) = l_infix {
 			// l_infix is the amount of consonants between it and the first vocal
 			// so don't forget + 1 because we added the first vocal before already
 			// the third vocal uses the same character as the first one
-			form.grapheme_insert(1 + l_infix + 1, prefix);
+			form.grapheme_insert(1 + l_infix + 1, if suffix_accented_bool { prefix } else { prefix_accented });
 		}
 
 		// add the duplicate
@@ -253,11 +292,17 @@ impl Concept {
 		return form;
 	}
 
+	// redirection to generate_stem_or_intonation for stems
+	fn generate_stem(&self, prefix: &str, suffix: &str, l_infix: Option<usize>, duplicate: Option<usize>) -> String {
+		return self.generate_stem_or_intonation(prefix, suffix, l_infix, duplicate, None);
+	}
+
+	// generate all four stems of a form
 	fn generate_stems(&self, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
 		let mut stems: [String; 4] = Default::default();
 
 		for ((prefix, suffix), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut()) {
-			*stem = &mut self.generate_stem(prefix, suffix, l_infix, duplicate);
+			**stem = self.generate_stem(prefix, suffix, l_infix, duplicate);
 		}
 
 		return stems;
@@ -267,11 +312,42 @@ impl Concept {
 	pub fn generate_forms(&self) -> [[String; 4]; 8] {
 		let mut forms: [[String; 4]; 8] = Default::default();
 
-		for ((l_infix, duplicate), ref mut form) in Self::FORMS.iter().zip(forms.iter_mut()) {
-			*form = &mut self.generate_stems(*l_infix, *duplicate);
+		for ((l_infix, duplicate, _), ref mut form) in Self::FORMS.iter().zip(forms.iter_mut()) {
+			**form = self.generate_stems(*l_infix, *duplicate);
 		}
 
 		return forms;
+	}
+
+	// generate all nine intonations of a form
+	pub fn generate_intonations(&self, index_form: usize, index_stem: usize) -> [String; 9] {
+		debug_assert!(index_form < Self::FORMS.len());
+		debug_assert!(index_stem < Self::STEMS.len());
+
+		let mut intonations: [String; 9] = Default::default();
+		let (l_infix, duplicate, suffix_accented_bool) = unsafe { Self::FORMS.get_unchecked(index_form) };
+		let (prefix, suffix) = unsafe { Self::STEMS.get_unchecked(index_stem) };
+
+		for ((prefix_accented, suffix_accented), intonation) in Self::INTONATIONS
+			.iter()
+			.map(|((prefix_0, prefix_1), (suffix_0, suffix_1))| {
+				return (
+					if *prefix == Self::INTONATIONS_MAP.0 { prefix_0 } else { prefix_1 },
+					if *suffix == Self::INTONATIONS_MAP.0 { suffix_0 } else { suffix_1 }
+				);
+			})
+			.zip(intonations.iter_mut())
+		{
+			*intonation = self.generate_stem_or_intonation(
+				prefix,
+				suffix,
+				*l_infix,
+				*duplicate,
+				Some((prefix_accented, suffix_accented, *suffix_accented_bool))
+			);
+		}
+
+		return intonations;
 	}
 
 	// build concept from string
@@ -310,14 +386,16 @@ impl Concept {
 
 		// check for duplicate keys
 		// looping through all letters
-		for (key_outer, letter_outer) in letters.iter().enumerate() {
-			// looping through all letters again to find a duplicate
-			for (key_inner, letter_inner) in letters.iter().enumerate() {
-				// make sure we are not comparing the same letter to each other
-				if key_outer != key_inner && letter_outer == letter_inner {
-					// if we found a duplicate return an error
-					return Err("Duplicate letters found.");
-				}
+		for (key, letter) in letters.iter().enumerate() {
+			// try to find duplicate letter in the others
+			// but filter same letter
+			if letters
+				.iter()
+				.enumerate()
+				.filter(|(found_key, _)| return *found_key != key)
+				.any(|(_, found_letter)| return found_letter == letter)
+			{
+				return Err("Duplicate letters found.");
 			}
 		}
 

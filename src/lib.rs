@@ -255,7 +255,7 @@ pub fn check_concept(event: &web_sys::Event) -> Result<(), JsValue> {
 	return Ok(());
 }
 
-pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
+fn display_forms(event: &web_sys::Event, index_form: usize) -> Result<(), JsValue> {
 	// prevent link from navigating to sommewhere else
 	event.prevent_default();
 
@@ -277,7 +277,7 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 	}
 
 	// prepare forms
-	let forms = Concept::from_concept_index(index).generate_forms();
+	let forms = Concept::from_concept_index(index_form).generate_forms();
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -289,14 +289,59 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 		.dyn_into::<web_sys::HtmlFormElement>()?
 		.get_with_name("index") // get page input
 		.dyn_into::<web_sys::HtmlInputElement>()?
-		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
+		.set_value_as_number((index_form + 1) as f64); // clicking on it triggers onsubmit(event)
 
 	for form in &forms {
 		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
-		for form in form {
-			row.insert_cell()?.set_inner_text(&form);
+		for (index_stem, form) in form.iter().enumerate() {
+			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
+			link.set_inner_text(&form);
+			link.set_attribute("href", "#")?;
+			let onclick_closure = Closure::wrap(
+				Box::new(move |event: web_sys::Event| return display_intonations(&event, index_form, index_stem))
+					as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
+			);
+			link.set_onclick(Some(onclick_closure.as_ref().unchecked_ref()));
+			onclick_closure.forget();
+			let cell = row.insert_cell()?;
+			cell.append_child(&link)?;
 		}
+	}
+
+	return Ok(());
+}
+
+fn display_intonations(event: &web_sys::Event, index_form: usize, index_stem: usize) -> Result<(), JsValue> {
+	// prevent link from navigating to sommewhere else
+	event.prevent_default();
+
+	// get document
+	let document = web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?;
+
+	// get table
+	let concept_table = document
+		.get_element_by_id("concept_table")
+		.ok_or("table should exist")?
+		.dyn_into::<web_sys::HtmlTableElement>()?;
+
+	// clear table
+	for _ in 0..concept_table.rows().length() {
+		concept_table.delete_row(-1)?;
+	}
+
+	// prepare forms
+	let intonations = Concept::from_concept_index(index_form).generate_intonations(index_form, index_stem);
+
+	for intonation in &intonations {
+		concept_table
+			.insert_row()?
+			.dyn_into::<web_sys::HtmlTableRowElement>()?
+			.insert_cell()?
+			.set_inner_text(&intonation);
 	}
 
 	return Ok(());
