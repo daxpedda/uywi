@@ -61,6 +61,19 @@ impl Concept {
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
+	const FORMS: [(Option<usize>, Option<usize>); 8] = [
+		(None, None),
+		(None, Some(3)),
+		(None, Some(2)),
+		(None, Some(5)),
+		(None, Some(6)),
+		(Some(1), Some(4)),
+		(Some(1), Some(5)),
+		(Some(1), Some(6))
+	];
+
+	const STEMS: [(&'static str, &'static str); 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
+
 	// increments index letter and resets letters with lower index and makes sure all indexed letters don't have collisions
 	fn increment_index(&mut self, index: usize) {
 		debug_assert!(index < self.concept.len());
@@ -207,61 +220,58 @@ impl Concept {
 	}
 
 	// generate the four forms to a stem
-	fn generate_stem(&self, prefix: usize, suffix: usize, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
-		let mut forms: [String; 4] = Default::default();
-		let concept = self.to_string();
+	fn generate_stem(&self, prefix: &str, suffix: &str, l_infix: Option<usize>, duplicate: Option<usize>) -> String {
+		// save default concept
+		let mut form = self.to_string();
+		// do some sanity checks
+		debug_assert!(2 + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.grapheme_len());
 
-		// loop through the four possible forms
-		for (iter, vocals) in [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")].iter().enumerate() {
-			// we know that we only have four forms
-			let form = unsafe { forms.get_unchecked_mut(iter) };
-			// save default concept
-			*form = concept.clone();
-			// do some sanity checks
-			debug_assert!(prefix + suffix + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.grapheme_len());
+		// insert first vocal
+		form.grapheme_insert(1, prefix);
+		// insert second vocal - suffix is the amount of consonants from behind
+		form.grapheme_insert(form.grapheme_len() - 1, suffix);
 
-			// insert first vocal
-			form.grapheme_insert(prefix, vocals.0);
-			// insert second vocal - suffix is the amount of consonants from behind
-			form.grapheme_insert(form.grapheme_len() - suffix, vocals.1);
-
-			// if there is a third vocal insert that too
-			if let Some(l_infix) = l_infix {
-				// l_infix is the amount of consonants between it and the first vocal
-				// so don't forget + 1 because we added the first vocal before already
-				// the third vocal uses the same character as the first one
-				form.grapheme_insert(prefix + l_infix + 1, vocals.0);
-			}
-
-			// add the duplicate
-			if let Some(duplicate) = duplicate {
-				// sanity checks
-				debug_assert!(duplicate <= form.grapheme_len() + if l_infix.is_some() { 3 } else { 2 });
-
-				// the duplicate is the same character as the last character before it in the concept
-				// we have an assert above
-				let duplicate_letter = unsafe { form.grapheme_nth(duplicate - 1).unchecked_unwrap().to_string() };
-				form.grapheme_insert(duplicate, &duplicate_letter);
-			}
+		// if there is a third vocal insert that too
+		if let Some(l_infix) = l_infix {
+			// l_infix is the amount of consonants between it and the first vocal
+			// so don't forget + 1 because we added the first vocal before already
+			// the third vocal uses the same character as the first one
+			form.grapheme_insert(1 + l_infix + 1, prefix);
 		}
 
-		return forms;
+		// add the duplicate
+		if let Some(duplicate) = duplicate {
+			// sanity checks
+			debug_assert!(duplicate <= form.grapheme_len() + if l_infix.is_some() { 3 } else { 2 });
+
+			// the duplicate is the same character as the last character before it in the concept
+			// we have an assert above
+			let duplicate_letter = unsafe { form.grapheme_nth(duplicate - 1).unchecked_unwrap().to_string() };
+			form.grapheme_insert(duplicate, &duplicate_letter);
+		}
+
+		return form;
+	}
+
+	fn generate_stems(&self, l_infix: Option<usize>, duplicate: Option<usize>) -> [String; 4] {
+		let mut stems: [String; 4] = Default::default();
+
+		for ((prefix, suffix), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut()) {
+			*stem = &mut self.generate_stem(prefix, suffix, l_infix, duplicate);
+		}
+
+		return stems;
 	}
 
 	// generate all forms within a concept and return them
 	pub fn generate_forms(&self) -> [[String; 4]; 8] {
-		let mut strings: [[String; 4]; 8] = Default::default();
+		let mut forms: [[String; 4]; 8] = Default::default();
 
-		strings[0] = self.generate_stem(1, 1, None, None);
-		strings[1] = self.generate_stem(1, 1, None, Some(3));
-		strings[2] = self.generate_stem(1, 1, None, Some(2));
-		strings[3] = self.generate_stem(1, 1, None, Some(5));
-		strings[4] = self.generate_stem(1, 1, None, Some(6));
-		strings[5] = self.generate_stem(1, 1, Some(1), Some(4));
-		strings[6] = self.generate_stem(1, 1, Some(1), Some(5));
-		strings[7] = self.generate_stem(1, 1, Some(1), Some(6));
+		for ((l_infix, duplicate), ref mut form) in Self::FORMS.iter().zip(forms.iter_mut()) {
+			*form = &mut self.generate_stems(*l_infix, *duplicate);
+		}
 
-		return strings;
+		return forms;
 	}
 
 	// build concept from string
