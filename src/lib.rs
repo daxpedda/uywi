@@ -21,8 +21,8 @@
 #[macro_use]
 extern crate alloc;
 
-mod word;
-use word::Word;
+mod concept;
+use concept::Concept;
 
 use alloc::boxed::Box;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -88,7 +88,7 @@ pub fn display_page(event: &web_sys::Event) -> Result<(), JsValue> {
 	return load_page(page_value, &None);
 }
 
-fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), JsValue> {
+fn load_page(page_value: usize, highlighted_concept: &Option<Concept>) -> Result<(), JsValue> {
 	// get document
 	let document = web_sys::window()
 		.ok_or("window should exist")?
@@ -96,32 +96,32 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 		.ok_or("should have a document on window")?;
 
 	// get table
-	let word_table = document
-		.get_element_by_id("word_table")
+	let concept_table = document
+		.get_element_by_id("concept_table")
 		.ok_or("table should exist")?
 		.dyn_into::<web_sys::HtmlTableElement>()?;
 
 	// clear table
-	for _ in 0..word_table.rows().length() {
-		word_table.delete_row(-1)?;
+	for _ in 0..concept_table.rows().length() {
+		concept_table.delete_row(-1)?;
 	}
 
-	// calculate amount of words we skipped due to pages
-	let words_skipped = (page_value - 1) * ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3));
-	// prepare word
-	let mut word = Word::from_word_index(words_skipped);
+	// calculate amount of concepts we skipped due to pages
+	let concepts_skipped = (page_value - 1) * ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3));
+	// prepare concept
+	let mut concept = Concept::from_concept_index(concepts_skipped);
 
-	// now that the first word is fixed, generate all words for the page
-	for _ in 0..Word::CONSONANTS.len() - 2 {
+	// now that the first concept is fixed, generate all concepts for the page
+	for _ in 0..Concept::CONSONANTS.len() - 2 {
 		// generate row
-		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
+		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
-		for _ in 0..Word::CONSONANTS.len() - 3 {
-			// print word
+		for _ in 0..Concept::CONSONANTS.len() - 3 {
+			// print concept
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(&word.to_string());
+			link.set_inner_text(&concept.to_string());
 			link.set_attribute("href", "#")?;
-			let index = word.get_word_index();
+			let index = concept.get_concept_index();
 			let onclick_closure = Closure::wrap(
 				Box::new(move |event: web_sys::Event| return display_forms(&event, index)) as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
 			);
@@ -130,14 +130,14 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 			let cell = row.insert_cell()?;
 			cell.append_child(&link)?;
 
-			if let Some(ref highlighted_word) = highlighted_word {
-				if highlighted_word == &word {
+			if let Some(ref highlighted_concept) = highlighted_concept {
+				if highlighted_concept == &concept {
 					cell.style().set_property("background-color", "yellow")?;
 				}
 			}
 
-			// get next word
-			word.increment_word();
+			// get next concept
+			concept.increment_concept();
 		}
 	}
 
@@ -145,7 +145,7 @@ fn load_page(page_value: usize, highlighted_word: &Option<Word>) -> Result<(), J
 }
 
 #[wasm_bindgen]
-pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
+pub fn display_concept_by_concept(event: &web_sys::Event) -> Result<(), JsValue> {
 	// prevent form from navigating to sommewhere else
 	event.prevent_default();
 
@@ -154,16 +154,16 @@ pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
 		.target() // getting form
 		.ok_or("event should have form in target")?
 		.dyn_into::<web_sys::HtmlFormElement>()?
-		.get_with_name("word") // get input field
+		.get_with_name("concept") // get input field
 		.dyn_into::<web_sys::HtmlInputElement>()?;
 	// get value
-	let word = input.value();
+	let concept = input.value();
 
-	match Word::from_string(&word) {
+	match Concept::from_string(&concept) {
 		// if everything checks out, display page!
-		Ok(word) => {
-			let index = word.get_word_index();
-			let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
+		Ok(concept) => {
+			let index = concept.get_concept_index();
+			let pages = index / ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3)) + 1;
 
 			web_sys::window()
 				.ok_or("window should exist")?
@@ -189,9 +189,9 @@ pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
 				.dyn_into::<web_sys::HtmlInputElement>()?
 				.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-			return load_page(pages, &Some(word));
+			return load_page(pages, &Some(concept));
 		},
-		// we want to display custom error messages if word wasn't generated
+		// we want to display custom error messages if concept wasn't generated
 		Err(err) => input.set_custom_validity(err)
 	}
 
@@ -199,7 +199,7 @@ pub fn display_word_by_word(event: &web_sys::Event) -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
+pub fn display_concept_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 	// prevent form from navigating to sommewhere else
 	event.prevent_default();
 
@@ -213,8 +213,8 @@ pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		.value_as_number() as usize
 		- 1;
 
-	let word = Word::from_word_index(index);
-	let pages = index / ((Word::CONSONANTS.len() - 2) * (Word::CONSONANTS.len() - 3)) + 1;
+	let concept = Concept::from_concept_index(index);
+	let pages = index / ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3)) + 1;
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -228,26 +228,26 @@ pub fn display_word_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
 
-	return load_page(pages, &Some(word));
+	return load_page(pages, &Some(concept));
 }
 
 #[wasm_bindgen]
-pub fn check_word(event: &web_sys::Event) -> Result<(), JsValue> {
+pub fn check_concept(event: &web_sys::Event) -> Result<(), JsValue> {
 	// getting input field
 	let input = event
 		.target()
 		.ok_or("event should have input in target")?
 		.dyn_into::<web_sys::HtmlInputElement>()?;
 	// get value
-	let word = input.value();
+	let concept = input.value();
 
 	// reset checks
 	input.set_custom_validity("");
 
 	// check if html checks are passed
 	if input.check_validity() {
-		// we want to display custom error messages if word wasn't generated
-		if let Err(err) = Word::from_string(&word) {
+		// we want to display custom error messages if concept wasn't generated
+		if let Err(err) = Concept::from_string(&concept) {
 			input.set_custom_validity(err);
 		}
 	}
@@ -266,18 +266,18 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 		.ok_or("should have a document on window")?;
 
 	// get table
-	let word_table = document
-		.get_element_by_id("word_table")
+	let concept_table = document
+		.get_element_by_id("concept_table")
 		.ok_or("table should exist")?
 		.dyn_into::<web_sys::HtmlTableElement>()?;
 
 	// clear table
-	for _ in 0..word_table.rows().length() {
-		word_table.delete_row(-1)?;
+	for _ in 0..concept_table.rows().length() {
+		concept_table.delete_row(-1)?;
 	}
 
 	// prepare forms
-	let forms = Word::from_word_index(index).generate_forms();
+	let forms = Concept::from_concept_index(index).generate_forms();
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -292,7 +292,7 @@ pub fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue
 		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
 	for form in &forms {
-		let row = word_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
+		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
 		for form in form {
 			row.insert_cell()?.set_inner_text(&form);

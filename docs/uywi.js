@@ -40,9 +40,9 @@
     * @param {any} arg0
     * @returns {void}
     */
-    __exports.display_word_by_word = function(arg0) {
+    __exports.display_concept_by_concept = function(arg0) {
         try {
-            return wasm.display_word_by_word(addBorrowedObject(arg0));
+            return wasm.display_concept_by_concept(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
@@ -55,9 +55,9 @@
     * @param {any} arg0
     * @returns {void}
     */
-    __exports.display_word_by_index = function(arg0) {
+    __exports.display_concept_by_index = function(arg0) {
         try {
-            return wasm.display_word_by_index(addBorrowedObject(arg0));
+            return wasm.display_concept_by_index(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
@@ -70,9 +70,9 @@
     * @param {any} arg0
     * @returns {void}
     */
-    __exports.check_word = function(arg0) {
+    __exports.check_concept = function(arg0) {
         try {
-            return wasm.check_word(addBorrowedObject(arg0));
+            return wasm.check_concept(addBorrowedObject(arg0));
 
         } finally {
             heap[stack_pointer++] = undefined;
