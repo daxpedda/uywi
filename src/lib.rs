@@ -85,6 +85,18 @@ pub fn display_page(event: &web_sys::Event) -> Result<(), JsValue> {
 	                      .value_as_number() // get value
 	                      as usize; // convert to int
 
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(1) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("concept") // get page input
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.set_value(""); // clicking on it triggers onsubmit(event)
+
 	return load_page(page_value, &None);
 }
 
@@ -94,6 +106,14 @@ fn load_page(page_value: usize, highlighted_concept: &Option<Concept>) -> Result
 		.ok_or("window should exist")?
 		.document()
 		.ok_or("should have a document on window")?;
+
+	// hide intonation table
+	document
+		.get_element_by_id("intonation_table")
+		.ok_or("table should exist")?
+		.dyn_into::<web_sys::HtmlTableElement>()?
+		.style()
+		.set_property("display", "none")?;
 
 	// get table
 	let concept_table = document
@@ -107,24 +127,24 @@ fn load_page(page_value: usize, highlighted_concept: &Option<Concept>) -> Result
 	}
 
 	// calculate amount of concepts we skipped due to pages
-	let concepts_skipped = (page_value - 1) * ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3));
+	let concepts_skipped = (page_value - 1) * ((Concept::RADICALS.len() - 2) * (Concept::RADICALS.len() - 3));
 	// prepare concept
 	let mut concept = Concept::from_concept_index(concepts_skipped);
 
 	// now that the first concept is fixed, generate all concepts for the page
-	for _ in 0..Concept::CONSONANTS.len() - 2 {
+	for _ in 0..Concept::RADICALS.len() - 2 {
 		// generate row
 		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
-		for _ in 0..Concept::CONSONANTS.len() - 3 {
+		for _ in 0..Concept::RADICALS.len() - 3 {
 			// print concept
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
 			link.set_inner_text(&concept.to_string());
 			link.set_attribute("href", "#")?;
 			let index = concept.get_concept_index();
-			let onclick_closure = Closure::wrap(
-				Box::new(move |event: web_sys::Event| return display_forms(&event, index)) as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
-			);
+			let onclick_closure =
+				Closure::wrap(Box::new(move |event: web_sys::Event| return display_stems(&event, index, None))
+					as Box<Fn(web_sys::Event) -> Result<(), JsValue>>);
 			link.set_onclick(Some(onclick_closure.as_ref().unchecked_ref()));
 			onclick_closure.forget();
 			let cell = row.insert_cell()?;
@@ -157,13 +177,13 @@ pub fn display_concept_by_concept(event: &web_sys::Event) -> Result<(), JsValue>
 		.get_with_name("concept") // get input field
 		.dyn_into::<web_sys::HtmlInputElement>()?;
 	// get value
-	let concept = input.value();
+	let concept_string = input.value();
 
-	match Concept::from_string(&concept) {
+	match Concept::from_string(&concept_string) {
 		// if everything checks out, display page!
 		Ok(concept) => {
 			let index = concept.get_concept_index();
-			let pages = index / ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3)) + 1;
+			let pages = index / ((Concept::RADICALS.len() - 2) * (Concept::RADICALS.len() - 3)) + 1;
 
 			web_sys::window()
 				.ok_or("window should exist")?
@@ -214,7 +234,7 @@ pub fn display_concept_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		- 1;
 
 	let concept = Concept::from_concept_index(index);
-	let pages = index / ((Concept::CONSONANTS.len() - 2) * (Concept::CONSONANTS.len() - 3)) + 1;
+	let pages = index / ((Concept::RADICALS.len() - 2) * (Concept::RADICALS.len() - 3)) + 1;
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -227,6 +247,18 @@ pub fn display_concept_by_index(event: &web_sys::Event) -> Result<(), JsValue> {
 		.get_with_name("page") // get page input
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number(pages as f64); // clicking on it triggers onsubmit(event)
+
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(1) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("concept") // get page input
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.set_value(&concept.to_string()); // clicking on it triggers onsubmit(event)
 
 	return load_page(pages, &Some(concept));
 }
@@ -255,7 +287,7 @@ pub fn check_concept(event: &web_sys::Event) -> Result<(), JsValue> {
 	return Ok(());
 }
 
-fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
+fn display_stems(event: &web_sys::Event, index: usize, highlighted_stem: Option<(usize, usize)>) -> Result<(), JsValue> {
 	// prevent link from navigating to sommewhere else
 	event.prevent_default();
 
@@ -264,6 +296,14 @@ fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
 		.ok_or("window should exist")?
 		.document()
 		.ok_or("should have a document on window")?;
+
+	// hide intonation table
+	document
+		.get_element_by_id("intonation_table")
+		.ok_or("table should exist")?
+		.dyn_into::<web_sys::HtmlTableElement>()?
+		.style()
+		.set_property("display", "none")?;
 
 	// get table
 	let concept_table = document
@@ -276,8 +316,21 @@ fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
 		concept_table.delete_row(-1)?;
 	}
 
-	// prepare forms
-	let forms = Concept::from_concept_index(index).generate_forms();
+	// prepare stems
+	let concept = Concept::from_concept_index(index);
+	let stems = concept.generate_stems();
+
+	web_sys::window()
+		.ok_or("window should exist")?
+		.document()
+		.ok_or("should have a document on window")?
+		.forms()
+		.get_with_index(1) // get only form on page
+		.ok_or("should have a form")?
+		.dyn_into::<web_sys::HtmlFormElement>()?
+		.get_with_name("concept") // get page input
+		.dyn_into::<web_sys::HtmlInputElement>()?
+		.set_value(&concept.to_string()); // clicking on it triggers onsubmit(event)
 
 	web_sys::window()
 		.ok_or("window should exist")?
@@ -291,30 +344,39 @@ fn display_forms(event: &web_sys::Event, index: usize) -> Result<(), JsValue> {
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-	for (index_form, form) in forms.iter().enumerate() {
+	for (index_form, stems) in stems.iter().enumerate() {
 		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
-		for (index_stem, form) in form.iter().enumerate() {
+		for (index_stem, stem) in stems.iter().enumerate() {
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(&form);
+			link.set_inner_text(&stem);
 			link.set_attribute("href", "#")?;
-			let onclick_closure = Closure::wrap(
-				Box::new(move |event: web_sys::Event| return display_intonations(&event, index_form, index_stem))
-					as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
-			);
+			let onclick_closure =
+				Closure::wrap(
+					Box::new(move |event: web_sys::Event| return display_intonations(&event, index, index_form, index_stem))
+						as Box<Fn(web_sys::Event) -> Result<(), JsValue>>
+				);
 			link.set_onclick(Some(onclick_closure.as_ref().unchecked_ref()));
 			onclick_closure.forget();
 			let cell = row.insert_cell()?;
 			cell.append_child(&link)?;
+
+			if let Some((highlighted_form, highlighted_stem)) = highlighted_stem {
+				if highlighted_form == index_form && highlighted_stem == index_stem {
+					cell.style().set_property("background-color", "yellow")?;
+				}
+			}
 		}
 	}
 
 	return Ok(());
 }
 
-fn display_intonations(event: &web_sys::Event, index_form: usize, index_stem: usize) -> Result<(), JsValue> {
+fn display_intonations(event: &web_sys::Event, index: usize, index_form: usize, index_stem: usize) -> Result<(), JsValue> {
 	// prevent link from navigating to sommewhere else
 	event.prevent_default();
+
+	display_stems(event, index, Some((index_form, index_stem)))?;
 
 	// get document
 	let document = web_sys::window()
@@ -323,21 +385,23 @@ fn display_intonations(event: &web_sys::Event, index_form: usize, index_stem: us
 		.ok_or("should have a document on window")?;
 
 	// get table
-	let concept_table = document
-		.get_element_by_id("concept_table")
+	let intonation_table = document
+		.get_element_by_id("intonation_table")
 		.ok_or("table should exist")?
 		.dyn_into::<web_sys::HtmlTableElement>()?;
 
+	intonation_table.style().set_property("display", "inline-table")?;
+
 	// clear table
-	for _ in 0..concept_table.rows().length() {
-		concept_table.delete_row(-1)?;
+	for _ in 0..intonation_table.rows().length() {
+		intonation_table.delete_row(-1)?;
 	}
 
 	// prepare forms
-	let intonations = Concept::from_concept_index(index_form).generate_intonations(index_form, index_stem);
+	let intonations = Concept::from_concept_index(index).generate_intonations(index_form, index_stem);
 
 	for intonation in &intonations {
-		concept_table
+		intonation_table
 			.insert_row()?
 			.dyn_into::<web_sys::HtmlTableRowElement>()?
 			.insert_cell()?

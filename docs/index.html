@@ -5,23 +5,24 @@
 	</head>
 	<body>
 		<form onsubmit="wasm_bindgen.display_page(event)">
-			<span style="width: 4rem; display: inline-block;">Page: </span>
+			<span style="width: 4rem; display: inline-block">Page: </span>
 			<input type="number" name="page" required min="1" max="1892" value="1" style="width: 5rem">
 			<span> </span>
 			<button type="submit" name="load">Load</button>
 		</form>
 		<form onsubmit="wasm_bindgen.display_concept_by_concept(event)">
-			<span style="width: 4rem; display: inline-block;">Concept: </span>
+			<span style="width: 4rem; display: inline-block">Concept: </span>
 			<input type="text" name="concept" required minlength="4" maxlength="4" value="" style="width: 5rem" oninput="wasm_bindgen.check_concept(event)">
 			<span> </span>
 			<button type="submit" name="load">Load</button>
 		</form>
 		<form onsubmit="wasm_bindgen.display_concept_by_index(event)">
-			<span style="width: 4rem; display: inline-block;">Index: </span>
+			<span style="width: 4rem; display: inline-block">Index: </span>
 			<input type="number" name="index" required min="1" max="3258024" value="" style="width: 5rem">
 			<span> </span>
 			<button type="submit" name="load">Load</button>
 		</form>
-		<table id="concept_table" border="1" style="white-space: nowrap"></table>
+		<table id="concept_table" border="1" style="display: inline-table; white-space: nowrap"></table>
+		<table id="intonation_table" border="1" style="display: none; white-space: nowrap"></table>
 	</body>
 </html>

@@ -6,7 +6,7 @@ use alloc::{
 use unchecked_unwrap::*;
 use unicode_segmentation::UnicodeSegmentation;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Concept {
 	concept: [usize; 4]
 }
@@ -58,12 +58,12 @@ impl GraphemeString for String {
 type VocalsPair = (&'static str, &'static str);
 
 impl Concept {
-	pub const CONSONANTS: [&'static str; 44] = [
+	pub const RADICALS: [&'static str; 44] = [
 		"?", "Y", "w", "h", "2", "H", "K", "k", "X", "x", "8", "4", "G", "g", "j", "7", "3", "Q", "c", "9", "S", "s", "Z", "z", "D", "d", "T", "t",
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
-	const FORMS: [(Option<usize>, Option<usize>, bool); 8] = [
+	const STEMS: [(Option<usize>, Option<usize>, bool); 8] = [
 		(None, None, true),
 		(None, Some(3), true),
 		(None, Some(2), true),
@@ -74,7 +74,7 @@ impl Concept {
 		(Some(1), Some(6), true)
 	];
 
-	const STEMS: [VocalsPair; 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
+	const FORMS: [VocalsPair; 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
 
 	const INTONATIONS_MAP: VocalsPair = ("o", "ı");
 
@@ -101,7 +101,7 @@ impl Concept {
 		*letter += 1;
 
 		// if we reached maximum character set to 0
-		if letter == &Self::CONSONANTS.len() {
+		if letter == &Self::RADICALS.len() {
 			*letter = 0;
 		}
 
@@ -141,7 +141,7 @@ impl Concept {
 	// little convenience function
 	fn decrement_index(mut index: usize) -> usize {
 		if index == 0 {
-			index = Self::CONSONANTS.len();
+			index = Self::RADICALS.len();
 		}
 
 		return index - 1;
@@ -196,19 +196,19 @@ impl Concept {
 
 	// set to arbitrary position in the list
 	pub fn from_concept_index(index: usize) -> Self {
-		debug_assert!(index < (Self::CONSONANTS.len()) * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3));
+		debug_assert!(index < (Self::RADICALS.len()) * (Self::RADICALS.len() - 1) * (Self::RADICALS.len() - 2) * (Self::RADICALS.len() - 3));
 
 		// reset concept
 		let mut concept = Self::default();
 
 		// calculate amount of pages
-		let pages = index / ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3));
+		let pages = index / ((Self::RADICALS.len() - 2) * (Self::RADICALS.len() - 3));
 
 		// loop through pages - but skip page 0 so we can do odd/even calculations properly
 		for page in 1..=pages {
 			// increment 1st letter every time we finish through the 2nd letter
 			// which is full length - 1
-			if page % (Self::CONSONANTS.len() - 1) == 0 {
+			if page % (Self::RADICALS.len() - 1) == 0 {
 				concept.increment_index(0);
 			}
 			// otherwise increment second letter
@@ -218,7 +218,7 @@ impl Concept {
 		}
 
 		// then get the rest of the indexes and increment them concept by concept
-		for _ in pages * ((Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3))..index {
+		for _ in pages * ((Self::RADICALS.len() - 2) * (Self::RADICALS.len() - 3))..index {
 			concept.increment_concept();
 		}
 
@@ -228,18 +228,18 @@ impl Concept {
 	// converts concept to string
 	pub fn to_string(&self) -> String {
 		// check out of bounds
-		debug_assert!(self.concept[0] < Self::CONSONANTS.len());
-		debug_assert!(self.concept[1] < Self::CONSONANTS.len());
-		debug_assert!(self.concept[2] < Self::CONSONANTS.len());
-		debug_assert!(self.concept[3] < Self::CONSONANTS.len());
+		debug_assert!(self.concept[0] < Self::RADICALS.len());
+		debug_assert!(self.concept[1] < Self::RADICALS.len());
+		debug_assert!(self.concept[2] < Self::RADICALS.len());
+		debug_assert!(self.concept[3] < Self::RADICALS.len());
 
 		return format!(
 			"{}{}{}{}",
 			// assert checked all indexes up there
-			unsafe { Self::CONSONANTS.get_unchecked(self.concept[1]) },
-			unsafe { Self::CONSONANTS.get_unchecked(self.concept[3]) },
-			unsafe { Self::CONSONANTS.get_unchecked(self.concept[2]) },
-			unsafe { Self::CONSONANTS.get_unchecked(self.concept[0]) }
+			unsafe { Self::RADICALS.get_unchecked(self.concept[1]) },
+			unsafe { Self::RADICALS.get_unchecked(self.concept[3]) },
+			unsafe { Self::RADICALS.get_unchecked(self.concept[2]) },
+			unsafe { Self::RADICALS.get_unchecked(self.concept[0]) }
 		);
 	}
 
@@ -261,53 +261,53 @@ impl Concept {
 		};
 
 		// save default concept
-		let mut form = self.to_string();
+		let mut stem = self.to_string();
 		// do some sanity checks
-		debug_assert!(2 + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.grapheme_len());
+		debug_assert!(2 + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= stem.grapheme_len());
 
 		// insert first vocal
-		form.grapheme_insert(1, if intonation { prefix_accented } else { prefix });
+		stem.grapheme_insert(1, if intonation { prefix_accented } else { prefix });
 		// insert second vocal - suffix is the amount of consonants from behind
-		form.grapheme_insert(form.grapheme_len() - 1, if suffix_accented_bool { suffix_accented } else { suffix });
+		stem.grapheme_insert(stem.grapheme_len() - 1, if suffix_accented_bool { suffix_accented } else { suffix });
 
 		// if there is a third vocal insert that too
 		if let Some(l_infix) = l_infix {
 			// l_infix is the amount of consonants between it and the first vocal
 			// so don't forget + 1 because we added the first vocal before already
 			// the third vocal uses the same character as the first one
-			form.grapheme_insert(1 + l_infix + 1, if suffix_accented_bool { prefix } else { prefix_accented });
+			stem.grapheme_insert(1 + l_infix + 1, if suffix_accented_bool { prefix_accented } else { prefix });
 		}
 
 		// add the duplicate
 		if let Some(duplicate) = duplicate {
 			// sanity checks
-			debug_assert!(duplicate <= form.grapheme_len() + if l_infix.is_some() { 3 } else { 2 });
+			debug_assert!(duplicate <= stem.grapheme_len() + if l_infix.is_some() { 3 } else { 2 });
 
 			// the duplicate is the same character as the last character before it in the concept
 			// we have an assert above
-			let duplicate_letter = unsafe { form.grapheme_nth(duplicate - 1).unchecked_unwrap().to_string() };
-			form.grapheme_insert(duplicate, &duplicate_letter);
+			let duplicate_letter = unsafe { stem.grapheme_nth(duplicate - 1).unchecked_unwrap().to_string() };
+			stem.grapheme_insert(duplicate, &duplicate_letter);
 		}
 
-		return form;
+		return stem;
 	}
 
-	// generate all forms within a concept and return them
-	pub fn generate_forms(&self) -> [[String; 4]; 8] {
-		let mut forms: [[String; 4]; 8] = Default::default();
+	// generate all stems within a concept and return them
+	pub fn generate_stems(&self) -> [[String; 8]; 4] {
+		let mut stems: [[String; 8]; 4] = Default::default();
 
 		// loop through all forms
-		for ((l_infix, duplicate, _), ref mut form) in Self::FORMS.iter().zip(forms.iter_mut()) {
+		for ((prefix, suffix), ref mut stems) in Self::FORMS.iter().zip(stems.iter_mut()) {
 			// loop through all stems
-			for ((prefix, suffix), ref mut stem) in Self::STEMS.iter().zip(form.iter_mut()) {
+			for ((l_infix, duplicate, _), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut()) {
 				**stem = self.generate_stem_or_intonation(prefix, suffix, *l_infix, *duplicate, None);
 			}
 		}
 
-		return forms;
+		return stems;
 	}
 
-	// generate all nine intonations of a form
+	// generate all nine intonations of a stem
 	pub fn generate_intonations(&self, index_form: usize, index_stem: usize) -> [String; 9] {
 		debug_assert!(index_form < Self::FORMS.len());
 		debug_assert!(index_stem < Self::STEMS.len());
@@ -315,8 +315,8 @@ impl Concept {
 		let mut intonations: [String; 9] = Default::default();
 		// sanity checks up there
 		// unpacking needed details
-		let (l_infix, duplicate, suffix_accented_bool) = unsafe { Self::FORMS.get_unchecked(index_form) };
-		let (prefix, suffix) = unsafe { Self::STEMS.get_unchecked(index_stem) };
+		let (prefix, suffix) = unsafe { Self::FORMS.get_unchecked(index_form) };
+		let (l_infix, duplicate, suffix_accented_bool) = unsafe { Self::STEMS.get_unchecked(index_stem) };
 
 		// loop through all intonations
 		for ((prefix_accented, suffix_accented), intonation) in Self::INTONATIONS
@@ -350,25 +350,25 @@ impl Concept {
 		// insert letters
 		// we did assert above, no run-time checks needed - except for invalid letters
 		let letters = [
-			Self::CONSONANTS
+			Self::RADICALS
 				.iter()
 				.position(|letter| {
 					return letter == unsafe { &string.grapheme_nth(0).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
-			Self::CONSONANTS
+			Self::RADICALS
 				.iter()
 				.position(|letter| {
 					return letter == unsafe { &string.grapheme_nth(1).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
-			Self::CONSONANTS
+			Self::RADICALS
 				.iter()
 				.position(|letter| {
 					return letter == unsafe { &string.grapheme_nth(2).unchecked_unwrap() };
 				})
 				.ok_or("Invalid letters.")?,
-			Self::CONSONANTS
+			Self::RADICALS
 				.iter()
 				.position(|letter| {
 					return letter == unsafe { &string.grapheme_nth(3).unchecked_unwrap() };
@@ -405,11 +405,11 @@ impl Concept {
 		// we start at the beginning
 		let mut search_concept = Self::default();
 		// the amount of concepts we skip in every iteration
-		let mut multiplier = Self::CONSONANTS.len() * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3);
+		let mut multiplier = Self::RADICALS.len() * (Self::RADICALS.len() - 1) * (Self::RADICALS.len() - 2) * (Self::RADICALS.len() - 3);
 
 		for (index, letter) in self.concept.iter().enumerate() {
 			// multiplier is reduced on every iteration
-			multiplier /= Self::CONSONANTS.len() - index;
+			multiplier /= Self::RADICALS.len() - index;
 
 			// we stop the loop if we find the letter
 			while unsafe { search_concept.concept.get_unchecked(index) } != letter {

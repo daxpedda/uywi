@@ -276,6 +276,11 @@ __exports.__widl_f_value_HTMLInputElement = function(ret, arg0) {
 
 };
 
+__exports.__widl_f_set_value_HTMLInputElement = function(arg0, arg1, arg2) {
+    let varg1 = getStringFromWasm(arg1, arg2);
+    getObject(arg0).value = varg1;
+};
+
 __exports.__widl_f_value_as_number_HTMLInputElement = function(arg0) {
     return getObject(arg0).valueAsNumber;
 };
