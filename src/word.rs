@@ -35,7 +35,7 @@ impl GraphemeStr for str {
 
 impl GraphemeStr for String {
 	fn grapheme_len(&self) -> usize {
-		return self.graphemes(true).size_hint().0;
+		return unsafe { self.graphemes(true).size_hint().1.unchecked_unwrap() };
 	}
 
 	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
@@ -321,20 +321,22 @@ impl Word {
 
 	// get word from word index
 	pub fn get_word_index(&self) -> usize {
+		let mut word_index = 0;
 		// we start at the beginning
 		let mut search_word = Self::default();
-		let mut word_index = 0;
 		// the amount of words we skip in every iteration
 		let mut multiplier = Self::CONSONANTS.len() * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3);
 
-		for index in 0..search_word.word.len() {
-			let letter = *unsafe { self.word.get_unchecked(index) };
+		for (index, letter) in self.word.iter().enumerate() {
+			// multiplier is reduced on every iteration
 			multiplier /= Self::CONSONANTS.len() - index;
 
 			loop {
-				if unsafe { search_word.word.get_unchecked(index) } == &letter {
+				// we stop the loop if we find the letter
+				if unsafe { search_word.word.get_unchecked(index) } == letter {
 					break;
 				}
+				// otherwise, go to the next letter and add multiplier
 				else {
 					search_word.increment_index(index);
 					word_index += multiplier;
