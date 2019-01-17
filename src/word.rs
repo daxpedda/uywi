@@ -25,7 +25,7 @@ trait GraphemeStr {
 
 impl GraphemeStr for str {
 	fn grapheme_len(&self) -> usize {
-		return self.graphemes(true).size_hint().0;
+		return (self.graphemes(true).collect(): Vec<&Self>).len();
 	}
 
 	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
