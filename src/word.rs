@@ -35,7 +35,7 @@ impl GraphemeStr for str {
 
 impl GraphemeStr for String {
 	fn grapheme_len(&self) -> usize {
-		return unsafe { self.graphemes(true).size_hint().1.unchecked_unwrap() };
+		return (self.graphemes(true).collect(): Vec<&str>).len();
 	}
 
 	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
@@ -61,7 +61,7 @@ impl Word {
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
-	// increments index letter and resets letters with lower index and makes sure all indexed letters dont have collisions
+	// increments index letter and resets letters with lower index and makes sure all indexed letters don't have collisions
 	fn increment_index(&mut self, index: usize) {
 		debug_assert!(index < self.word.len());
 
@@ -150,7 +150,7 @@ impl Word {
 				continue;
 			}
 
-			// if we found the first letter then doesn't have a limit, increase it by one
+			// if we found the first letter, then there isn't a limit, increase it by one
 			self.increment_index(index);
 			// and break!
 			break;
@@ -331,16 +331,11 @@ impl Word {
 			// multiplier is reduced on every iteration
 			multiplier /= Self::CONSONANTS.len() - index;
 
-			loop {
-				// we stop the loop if we find the letter
-				if unsafe { search_word.word.get_unchecked(index) } == letter {
-					break;
-				}
+			// we stop the loop if we find the letter
+			while unsafe { search_word.word.get_unchecked(index) } != letter {
 				// otherwise, go to the next letter and add multiplier
-				else {
-					search_word.increment_index(index);
-					word_index += multiplier;
-				}
+				search_word.increment_index(index);
+				word_index += multiplier;
 			}
 		}
 
