@@ -367,6 +367,15 @@ __exports.__wbg_call_6ecd167e59b01396 = function(arg0, arg1, exnptr) {
     }
 };
 
+__exports.__wbg_error_cc95a3d302735ca3 = function(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+
+    varg0 = varg0.slice();
+    wasm.__wbindgen_free(arg0, arg1 * 1);
+
+    console.error(varg0);
+};
+
 __exports.__wbindgen_object_clone_ref = function(idx) {
     return addHeapObject(getObject(idx));
 };

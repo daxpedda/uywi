@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 #![feature(type_ascription, try_blocks, alloc)]
 #![warn(
 	clippy::cargo, // rls being weird
@@ -33,7 +33,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
-	//std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+	std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
 	// get document
 	let document = web_sys::window()
