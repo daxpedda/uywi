@@ -1,5 +1,6 @@
 use alloc::string::String;
 use unchecked_unwrap::*;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(PartialEq)]
 pub struct Word {
@@ -116,10 +117,7 @@ impl Word {
 
 	// set to arbitrary position in the list
 	pub fn from_word_index(index: usize) -> Self {
-		debug_assert!(
-			index > 0
-				&& index < (Self::CONSONANTS.len()) * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3)
-		);
+		debug_assert!(index < (Self::CONSONANTS.len()) * (Self::CONSONANTS.len() - 1) * (Self::CONSONANTS.len() - 2) * (Self::CONSONANTS.len() - 3));
 
 		// reset word
 		let mut word = Self::default();
@@ -172,7 +170,7 @@ impl Word {
 		let word = self.to_string();
 
 		// loop through the four possible forms
-		for (iter, vocals) in [('o', 'o'), ('o', 'ı'), ('ı', 'o'), ('ı', 'ı')].iter().enumerate() {
+		for (iter, vocals) in [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")].iter().enumerate() {
 			// we know that we only have four forms
 			let form = unsafe { forms.get_unchecked_mut(iter) };
 			// save default word
@@ -181,16 +179,16 @@ impl Word {
 			debug_assert!(prefix + suffix + if let Some(l_infix) = l_infix { l_infix } else { 0 } <= form.len());
 
 			// insert first vocal
-			form.insert(prefix, vocals.0);
+			form.insert_str(prefix, vocals.0);
 			// insert second vocal - suffix is the amount of consonants from behind
-			form.insert(form.len() - suffix, vocals.1);
+			form.insert_str(form.len() - suffix, vocals.1);
 
 			// if there is a third vocal insert that too
 			if let Some(l_infix) = l_infix {
 				// l_infix is the amount of consonants between it and the first vocal
 				// so don't forget + 1 because we added the first vocal before already
 				// the third vocal uses the same character as the first one
-				form.insert(prefix + l_infix + 1, vocals.0);
+				form.insert_str(prefix + l_infix + 1, vocals.0);
 			}
 
 			// add the duplicate
@@ -200,8 +198,10 @@ impl Word {
 
 				// the duplicate is the same character as the last character before it in the word
 				// we have an assert above
-				let duplicate_letter = unsafe { form.chars().nth(duplicate - 1).unchecked_unwrap() };
-				form.insert(duplicate, duplicate_letter);
+				let duplicate_letter = unsafe { form.graphemes(true).nth(duplicate - 1).unchecked_unwrap().to_string() };
+				let mut vec = form.graphemes(true).collect::<Vec<&str>>();
+				vec.insert(duplicate, &duplicate_letter);
+				*form = vec.concat();
 			}
 		}
 
