@@ -3,6 +3,7 @@
 #![warn(
 	clippy::cargo, // rls being weird
 	clippy::pedantic,
+	clippy::nursery,
 	clippy::restriction
 )]
 #![allow(
@@ -355,7 +356,7 @@ fn display_stems(event: &web_sys::Event, index: usize, highlighted_stem: Option<
 			let index_stem = total_index - index_form * Concept::STEMS.len();
 
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(unsafe { &stems_iter.next().unchecked_unwrap() });
+			link.set_inner_text(unsafe { stems_iter.next().unchecked_unwrap() });
 			link.set_attribute("href", "#")?;
 			let onclick_closure =
 				Closure::wrap(
@@ -411,7 +412,7 @@ fn display_intonations(event: &web_sys::Event, index: usize, index_form: usize, 
 			.insert_row()?
 			.dyn_into::<web_sys::HtmlTableRowElement>()?
 			.insert_cell()?
-			.set_inner_text(&intonation);
+			.set_inner_text(intonation);
 	}
 
 	return Ok(());

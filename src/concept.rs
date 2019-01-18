@@ -7,7 +7,7 @@ use alloc::{
 use unchecked_unwrap::*;
 use unicode_segmentation::UnicodeSegmentation;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq)]
 pub struct Concept {
 	concept: [usize; 4]
 }
