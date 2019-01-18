@@ -1,5 +1,5 @@
-#![no_std]
-#![feature(type_ascription, try_blocks, alloc, slice_concat_ext)]
+//#![no_std]
+#![feature(type_ascription, try_blocks, alloc, slice_concat_ext, const_slice_len, maybe_uninit)]
 #![warn(
 	clippy::cargo, // rls being weird
 	clippy::pedantic,
@@ -25,7 +25,6 @@ mod concept;
 
 use alloc::boxed::Box;
 use concept::Concept;
-use unchecked_unwrap::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[global_allocator]
@@ -33,7 +32,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
-	//std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+	std::panic::set_hook(Box::new(console_error_panic_hook::hook));
 
 	// get document
 	let document = web_sys::window()
@@ -345,18 +344,18 @@ fn display_stems(event: &web_sys::Event, index: usize, highlighted_stem: Option<
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-	let mut stems_iter = stems.iter();
+	let mut rows: [Result<Result<web_sys::HtmlTableRowElement, web_sys::HtmlElement>, JsValue>; Concept::STEMS.len()] =
+		array_init::array_init(|_| {
+			return concept_table
+				.insert_row()
+				.map(|row| return row.dyn_into::<web_sys::HtmlTableRowElement>());
+		});
 
-	for index_row in 0..Concept::STEMS.len() {
-		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
-
-		for index_column in 0..Concept::FORMS.len() {
-			let total_index = index_row * Concept::FORMS.len() + index_column;
-			let index_form = total_index / Concept::STEMS.len();
-			let index_stem = total_index - index_form * Concept::STEMS.len();
-
+	for (index_form, form) in stems.iter().enumerate() {
+		for (index_stem, (stem, row)) in form.iter().zip(rows.iter_mut()).enumerate() {
+			let row = row.as_ref()?.as_ref()?;
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(unsafe { stems_iter.next().unchecked_unwrap() });
+			link.set_inner_text(stem);
 			link.set_attribute("href", "#")?;
 			let onclick_closure =
 				Closure::wrap(

@@ -26,7 +26,7 @@ trait GraphemeStr {
 
 impl GraphemeStr for str {
 	fn grapheme_len(&self) -> usize {
-		return (self.graphemes(true).collect(): Vec<&Self>).len();
+		return self.graphemes(true).count();
 	}
 
 	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
@@ -36,7 +36,7 @@ impl GraphemeStr for str {
 
 impl GraphemeStr for String {
 	fn grapheme_len(&self) -> usize {
-		return (self.graphemes(true).collect(): Vec<&str>).len();
+		return self.graphemes(true).count();
 	}
 
 	fn grapheme_nth(&'_ self, n: usize) -> Option<&'_ str> {
@@ -294,13 +294,13 @@ impl Concept {
 	}
 
 	// generate all stems within a concept and return them
-	pub fn generate_stems(&self) -> [String; 32] {
-		let mut stems: [String; 32] = Default::default();
+	pub fn generate_stems(&self) -> [[String; 8]; 4] {
+		let mut stems: [[String; 8]; 4] = Default::default();
 
 		// loop through all forms
-		for (index_form, (prefix, suffix)) in Self::FORMS.iter().enumerate() {
+		for ((prefix, suffix), ref mut form) in Self::FORMS.iter().zip(&mut stems) {
 			// loop through all stems
-			for ((l_infix, duplicate, _), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut().skip(index_form * Self::STEMS.len())) {
+			for ((l_infix, duplicate, _), ref mut stem) in Self::STEMS.iter().zip(form.iter_mut()) {
 				**stem = self.generate_stem_or_intonation(prefix, suffix, *l_infix, *duplicate, None);
 			}
 		}
