@@ -344,12 +344,11 @@ fn display_stems(event: &web_sys::Event, index: usize, highlighted_stem: Option<
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-	let mut rows: [Result<Result<web_sys::HtmlTableRowElement, web_sys::HtmlElement>, JsValue>; Concept::STEMS.len()] =
-		array_init::array_init(|_| {
-			return concept_table
-				.insert_row()
-				.map(|row| return row.dyn_into::<web_sys::HtmlTableRowElement>());
-		});
+	let mut rows = array_init::array_init::<[_; Concept::STEMS.len()], _>(|_| {
+		return concept_table
+			.insert_row()
+			.map(|row| return row.dyn_into::<web_sys::HtmlTableRowElement>());
+	});
 
 	for (index_form, form) in stems.iter().enumerate() {
 		for (index_stem, (stem, row)) in form.iter().zip(rows.iter_mut()).enumerate() {
