@@ -18,13 +18,13 @@
 	clippy::shadow_same
 )]
 
-#[macro_use]
 extern crate alloc;
 
 mod concept;
-use concept::Concept;
 
 use alloc::boxed::Box;
+use concept::Concept;
+use unchecked_unwrap::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[global_allocator]
@@ -344,12 +344,18 @@ fn display_stems(event: &web_sys::Event, index: usize, highlighted_stem: Option<
 		.dyn_into::<web_sys::HtmlInputElement>()?
 		.set_value_as_number((index + 1) as f64); // clicking on it triggers onsubmit(event)
 
-	for (index_form, stems) in stems.iter().enumerate() {
+	let mut stems_iter = stems.iter();
+
+	for index_row in 0..Concept::STEMS.len() {
 		let row = concept_table.insert_row()?.dyn_into::<web_sys::HtmlTableRowElement>()?;
 
-		for (index_stem, stem) in stems.iter().enumerate() {
+		for index_column in 0..Concept::FORMS.len() {
+			let total_index = index_row * Concept::FORMS.len() + index_column;
+			let index_form = total_index / Concept::STEMS.len();
+			let index_stem = total_index - index_form * Concept::STEMS.len();
+
 			let link = document.create_element("a")?.dyn_into::<web_sys::HtmlElement>()?;
-			link.set_inner_text(&stem);
+			link.set_inner_text(unsafe { &stems_iter.next().unchecked_unwrap() });
 			link.set_attribute("href", "#")?;
 			let onclick_closure =
 				Closure::wrap(

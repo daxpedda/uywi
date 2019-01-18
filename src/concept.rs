@@ -1,4 +1,5 @@
 use alloc::{
+	format,
 	slice::SliceConcatExt,
 	string::{String, ToString},
 	vec::Vec
@@ -63,7 +64,7 @@ impl Concept {
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "1", "R", "r", "L", "l",
 	];
 
-	const STEMS: [(Option<usize>, Option<usize>, bool); 8] = [
+	pub const STEMS: [(Option<usize>, Option<usize>, bool); 8] = [
 		(None, None, true),
 		(None, Some(3), true),
 		(None, Some(2), true),
@@ -74,7 +75,7 @@ impl Concept {
 		(Some(1), Some(6), true)
 	];
 
-	const FORMS: [VocalsPair; 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
+	pub const FORMS: [VocalsPair; 4] = [("o", "o"), ("o", "ı"), ("ı", "o"), ("ı", "ı")];
 
 	const INTONATIONS_MAP: VocalsPair = ("o", "ı");
 
@@ -293,13 +294,13 @@ impl Concept {
 	}
 
 	// generate all stems within a concept and return them
-	pub fn generate_stems(&self) -> [[String; 8]; 4] {
-		let mut stems: [[String; 8]; 4] = Default::default();
+	pub fn generate_stems(&self) -> [String; 32] {
+		let mut stems: [String; 32] = Default::default();
 
 		// loop through all forms
-		for ((prefix, suffix), ref mut stems) in Self::FORMS.iter().zip(stems.iter_mut()) {
+		for (index_form, (prefix, suffix)) in Self::FORMS.iter().enumerate() {
 			// loop through all stems
-			for ((l_infix, duplicate, _), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut()) {
+			for ((l_infix, duplicate, _), ref mut stem) in Self::STEMS.iter().zip(stems.iter_mut().skip(index_form * Self::STEMS.len())) {
 				**stem = self.generate_stem_or_intonation(prefix, suffix, *l_infix, *duplicate, None);
 			}
 		}
