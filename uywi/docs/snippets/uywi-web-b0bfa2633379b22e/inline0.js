@@ -1,0 +1,1 @@
+export function set_stacktracelimit(limit) { Error.stackTraceLimit = limit; }

@@ -1,0 +1,67 @@
+[config]
+skip_core_tasks = true
+
+[tasks.internal-build]
+private = true
+command = "cargo"
+args = ["build"]
+
+[tasks.internal-build-release]
+private = true
+command = "cargo"
+args = ["build", "--release", "--all"]
+
+[tasks.internal-clean-snippets]
+private = true
+condition = { files_exist = ["docs/snippets/"] }
+script_runner = "@shell"
+script = ["rm -Rf docs/snippets/"]
+
+[tasks.internal-bindgen]
+private = true
+command = "wasm-bindgen"
+args = [
+	"--target", "web",
+	"--no-typescript",
+	"--out-dir", "docs",
+	"target/wasm32-unknown-unknown/debug/uywi_web.wasm"
+]
+
+[tasks.internal-bindgen-release]
+private = true
+command = "wasm-bindgen"
+args = [
+	"--target", "web",
+	"--no-typescript",
+	"--out-dir", "docs",
+	"--remove-producers-section",
+	"target/wasm32-unknown-unknown/release/uywi_web.wasm"
+]
+
+[tasks.internal-wasm-opt]
+private = true
+command = "res/tools/wasm-opt"
+args = ["-Os", "-o", "docs/uywi_web_bg.wasm", "docs/uywi_web_bg.wasm"]
+
+[tasks.serve]
+command = "http"
+args = ["-r", "docs"]
+
+[tasks.build]
+dependencies = ["internal-build", "internal-clean-snippets", "internal-bindgen"]
+
+[tasks.build-release]
+dependencies = ["internal-build-release", "internal-clean-snippets", "internal-bindgen-release", "internal-wasm-opt"]
+
+[tasks.test]
+env = { GECKODRIVER = "res/tools/geckodriver" }
+command = "cargo"
+args = ["test", "--release", "--all"]
+
+[tasks.doc]
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items"]
+
+[tasks.doc-open]
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items", "--open"]

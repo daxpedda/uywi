@@ -1,9 +1,8 @@
 unstable_features = true
-edition = "2018"
+comment_width = 150
 hard_tabs = true
-control_brace_style = "ClosingNextLine"
-trailing_comma = "Never"
-match_block_trailing_comma = true
-newline_style = "Unix"
-max_width = 150
 merge_imports = true
+match_block_trailing_comma = true
+max_width = 150
+newline_style = "Unix"
+wrap_comments = true

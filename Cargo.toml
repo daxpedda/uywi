@@ -1,46 +1,17 @@
-[package]
-name = "uywi"
-version = "0.1.0"
-authors = ["daxpedda <daxpedda@users.noreply.github.com>"]
-edition = "2018"
-
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-wasm-bindgen = "0.2.32"
-wee_alloc = "0.4.2"
-console_error_panic_hook = "0.1.5"
-unchecked_unwrap = "1.0.0"
-unicode-segmentation = "1.2.1"
-array-init = { version = "0.0.4", features = ["nightly"] }
-
-[dependencies.web-sys]
-version = "0.3.9"
-features = [
-    "CssStyleDeclaration",
-    "Document",
-    "Element",
-    "Event",
-    "EventTarget",
-    "HtmlButtonElement",
-    "HtmlCollection",
-    "HtmlElement",
-    "HtmlFormElement",
-    "HtmlInputElement",
-    "HtmlTableElement",
-    "HtmlTableRowElement",
-    "Node",
-    "Window"
+[workspace]
+members = [
+	"uywi",
+	"uywi-web"
 ]
 
 [profile.release]
+opt-level = "s"
 lto = true
 codegen-units = 1
-opt-level = "s"
 panic = "abort"
 
-# cargo build --release
-# wasm-bindgen --no-typescript --no-modules --browser target/wasm32-unknown-unknown/release/uywi.wasm --out-dir docs
-# wasm-opt -Os -o docs/uywi.wasm docs/uywi_bg.wasm
-# del /F "docs\uywi_bg.wasm"
+[profile.test]
+opt-level = 3
+lto = true
+codegen-units = 1
+incremental = false

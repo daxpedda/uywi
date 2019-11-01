@@ -1,0 +1,16 @@
+[package]
+name = "uywi"
+version = "0.1.0"
+authors = ["daxpedda <daxpedda@gmail.com>"]
+edition = "2018"
+description = "UYWI word generator frontend."
+
+[dependencies]
+array-init = "0.1.0"
+arrayvec = "0.5.1"
+num = "0.2.0"
+thiserror = "1.0.4"
+unicode-segmentation = "1.5.0"
+
+[dev-dependencies]
+rayon = "1.2.0"
