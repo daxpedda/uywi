@@ -96,6 +96,9 @@ pub trait GraphemeIdentity {
 
 	/// Get specific grapheme.
 	fn grapheme_nth(&'_ self, index: usize) -> Option<&'_ str>;
+
+	/// Get last grapheme.
+	fn grapheme_last(&'_ self) -> Option<&'_ str>;
 }
 
 impl GraphemeIdentity for str {
@@ -105,5 +108,9 @@ impl GraphemeIdentity for str {
 
 	fn grapheme_nth(&'_ self, index: usize) -> Option<&'_ str> {
 		return self.graphemes(true).nth(index);
+	}
+
+	fn grapheme_last(&'_ self) -> Option<&'_ str> {
+		return self.graphemes(true).last();
 	}
 }

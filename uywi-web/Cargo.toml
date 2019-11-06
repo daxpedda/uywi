@@ -7,7 +7,7 @@ description = "UYWI word generator frontend."
 
 [dependencies]
 log = { version = "0.4.8", features = ["release_max_level_off"] }
-seed = "0.4.1"
+seed = "0.4.2"
 uywi = { path = "../uywi"}
 wasm-bindgen = "0.2.53"
 wasm-logger = "0.1.5"
@@ -18,7 +18,7 @@ version = "0.3.30"
 features = [
 	"FormData",
 	"HtmlFormElement",
-	"HtmlInputElement"
+	"HtmlInputElement",
 ]
 
 [dev-dependencies]

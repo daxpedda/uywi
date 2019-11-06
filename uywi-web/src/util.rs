@@ -7,7 +7,7 @@ use seed::{
 #[cfg(debug_assertions)]
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsCast;
-use web_sys::{FormData, HtmlInputElement};
+use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 use wee_alloc::WeeAlloc;
 
 /// WASM optimized allocator.
@@ -29,6 +29,23 @@ impl PFormData for FormData {
 	}
 }
 
+/// Utility trait for checked extraction from `HtmlFormElement`.
+pub trait PHtmlFormElement {
+	/// Get element by name and panic if not found or couldn't get converted.
+	fn pget<T: JsCast>(&self, name: &str) -> T;
+}
+
+impl PHtmlFormElement for HtmlFormElement {
+	fn pget<T: JsCast>(&self, name: &str) -> T {
+		return self
+			.elements()
+			.get_with_name(name)
+			.expect("no field found")
+			.dyn_into::<T>()
+			.expect("failed to convert `Element`");
+	}
+}
+
 /// Utility trait for reserving space for children in a `Node`.
 pub trait ReserveChildren {
 	/// Reserve space in the children container of the element.
@@ -47,13 +64,20 @@ impl<T> ReserveChildren for Node<T> {
 
 /// Create an event that accepts a closure and passes a `web_sys::FormData`.
 /// Optionally use `web_sys::Event::prevent_default`.
-pub fn submit_ev<T>(handler: impl FnOnce(FormData) -> T + 'static + Clone) -> Listener<T> {
+pub fn submit_ev<T>(handler: impl FnOnce(HtmlFormElement, FormData) -> T + 'static + Clone) -> Listener<T> {
 	use seed::prelude::raw_ev;
 
 	return raw_ev(Ev::Submit, move |event| {
 		event.prevent_default();
 
+		let form = event
+			.target()
+			.expect("event doesn't have a target")
+			.dyn_into()
+			.expect("target is not a `HtmlFormElement`");
+
 		return handler(
+			form,
 			FormData::new_with_form(
 				event
 					.target()

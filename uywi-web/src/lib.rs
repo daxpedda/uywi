@@ -16,18 +16,19 @@
 mod util;
 
 use seed::{
-	prelude::{AsAtValue, At, El, IndexMap, Node, Orders, UpdateEl, View},
+	prelude::{AsAtValue, At, El, IndexMap, Init, Node, Orders, UpdateEl, View},
 	App,
 };
-use std::str::FromStr;
 use util::*;
-use uywi::{Concept, Length, Page};
+use uywi::{Accent, Concept, Length, Page};
 use wasm_bindgen::prelude::wasm_bindgen;
-use web_sys::{FormData, HtmlInputElement};
+use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 
 /// Data we save for the app.
 #[derive(Default)]
 struct Model {
+	/// Current accent.
+	accent: Accent,
 	/// Current concept length.
 	length: Length,
 	/// Which type of data we are currently showing.
@@ -68,8 +69,8 @@ impl ModelView {
 	fn data_to_string(&self) -> ModelDataString {
 		let (page, concept, index) = match self {
 			Self::Page { page } => (page.to_string(), "".into(), "".into()),
-			Self::Concept { page, concept } => (page.to_string(), concept.to_string(), concept.index_as_string()),
-			Self::Forms { concept } => ("".into(), concept.to_string(), concept.index_as_string()),
+			Self::Concept { page, concept } => (page.to_string(), concept.to_string(Accent::UywiChiffre), concept.index_as_string()),
+			Self::Forms { concept } => ("".into(), concept.to_string(Accent::UywiChiffre), concept.index_as_string()),
 		};
 
 		return ModelDataString { page, concept, index };
@@ -96,6 +97,8 @@ fn view(model: &Model) -> impl View<Event> {
 	return vec![
 		div![
 			class!["table"],
+			// accent
+			build_accent(model),
 			// concept length
 			form![
 				class!["tr"],
@@ -150,9 +153,14 @@ fn view(model: &Model) -> impl View<Event> {
 						attrs![
 							At::Type => "text",
 							At::Name => "input",
+							At::Size => 1,
 							At::Required => true.as_at_value(),
-							At::Custom("minlength".into()) => model.length.as_int(),
-							At::MaxLength => model.length.as_int(),
+							At::MinLength => 2,
+							At::MaxLength => 4,
+							At::AutoComplete => "off",
+							At::SpellCheck => "false",
+							At::Custom("autocorrect".into()) => "off",
+							At::Custom("autocapitalize".into()) => "off",
 							At::Value => concept
 						],
 						util::input_ev(Event::ConceptInput)
@@ -180,12 +188,38 @@ fn view(model: &Model) -> impl View<Event> {
 			],
 		],
 		// displayed table
-		create_table(model),
+		build_table(model),
+	];
+}
+
+/// Build accent form.
+fn build_accent(model: &Model) -> Node<Event> {
+	use seed::{attrs, button, class, div, form, option, select};
+
+	return form![
+		class!["tr"],
+		util::submit_ev(Event::Accent),
+		div![class!["td"], "Accent:"],
+		div![
+			class!["td"],
+			select![
+				attrs![At::Name => "input"],
+				option![
+					attrs![At::Value => 0, At::Selected => (Accent::UywiChiffre == model.accent).as_at_value()],
+					Accent::UywiChiffre.to_string()
+				],
+				option![
+					attrs![At::Value => 1, At::Selected => (Accent::IpaPeter == model.accent).as_at_value()],
+					Accent::IpaPeter.to_string()
+				],
+			],
+		],
+		div![class!["td"], button![attrs![At::Type => "submit", At::Name => "load"], "Load"]]
 	];
 }
 
 /// Create the table.
-fn create_table(model: &Model) -> Node<Event> {
+fn build_table(model: &Model) -> Node<Event> {
 	use seed::{a, attrs, table, td, tr};
 
 	let mut table = table![];
@@ -220,7 +254,11 @@ fn create_table(model: &Model) -> Node<Event> {
 					}
 
 					// add a link that leads to `Event::OpenConcept`
-					cell.add_child(a![attrs! [At::Href => "#"], click_ev(concept, Event::OpenConcept), concept.to_string()]);
+					cell.add_child(a![
+						attrs! [At::Href => "#"],
+						click_ev(concept, Event::OpenConcept),
+						concept.to_string(model.accent)
+					]);
 
 					html_row.add_child(cell);
 				}
@@ -237,10 +275,10 @@ fn create_table(model: &Model) -> Node<Event> {
 				let mut row = tr![];
 
 				// reserve appropriate space for the row
-				row.reserve_children(model.length.forms_per_stem());
+				row.reserve_children(model.length.words_per_stem());
 
 				for form in stem {
-					row.add_child(td![form.to_string()]);
+					row.add_child(td![form.to_string(model.accent)]);
 				}
 
 				table.add_child(row);
@@ -254,16 +292,18 @@ fn create_table(model: &Model) -> Node<Event> {
 /// Events that are sent by the app.
 #[derive(Debug, Clone)]
 enum Event {
+	/// Handle accent.
+	Accent(HtmlFormElement, FormData),
 	/// Handle concept length.
-	Length(FormData),
+	Length(HtmlFormElement, FormData),
 	/// Handle page form.
-	Page(FormData),
+	Page(HtmlFormElement, FormData),
 	/// Handle concept form.
-	Concept(FormData),
+	Concept(HtmlFormElement, FormData),
 	/// Check concept input for validity.
 	ConceptInput(HtmlInputElement, String),
 	/// Handle index form.
-	Index(FormData),
+	Index(HtmlFormElement, FormData),
 	/// Handle clicking on a concept.
 	OpenConcept(Concept),
 }
@@ -271,7 +311,16 @@ enum Event {
 /// Handling events.
 fn update(event: Event, model: &mut Model, orders: &mut impl Orders<Event>) {
 	match event {
-		Event::Length(data) => {
+		Event::Accent(_, data) => {
+			// set accent
+			let data = data.pget("input").parse().expect("accent input isn't an integer");
+			model.accent = match data {
+				0 => Accent::UywiChiffre,
+				1 => Accent::IpaPeter,
+				_ => unreachable!("invalid accent"),
+			}
+		},
+		Event::Length(_, data) => {
 			// set length
 			let data = data.pget("input").parse().expect("length input isn't an integer");
 			model.length = Length::new(data).expect("length input is invalid");
@@ -282,22 +331,43 @@ fn update(event: Event, model: &mut Model, orders: &mut impl Orders<Event>) {
 			};
 		},
 		// handle page form
-		Event::Page(data) => {
+		Event::Page(_, data) => {
 			let page = Page::from_str(&data.pget("input"), model.length).expect("failed to create page");
 
 			model.view = ModelView::Page { page };
 		},
-		// handle concept string and index input
-		event @ Event::Concept(..) | event @ Event::Index(..) => {
-			// extract `Concept` from form
-			#[allow(clippy::wildcard_enum_match_arm)]
-			let concept = match event {
-				Event::Concept(data) => Concept::from_str(&data.pget("input")),
-				Event::Index(data) => Concept::from_index_str(&data.pget("input"), model.length),
-				_ => unreachable!("filtered event still reached"),
-			};
+		// handle concept string
+		Event::Concept(form, data) => {
+			// get input
+			let input = form.pget::<HtmlInputElement>("input");
 
-			let concept = concept.expect("failed to create `Concept`");
+			// reset checks, because `check_validity` will trigger the last error
+			input.set_custom_validity("");
+
+			// make sure html checks are passed
+			if input.check_validity() {
+				match Concept::from_str(&data.pget("input"), Accent::UywiChiffre) {
+					Ok(concept) => {
+						model.length = concept.length();
+						model.view = ModelView::Concept {
+							page: concept.page(),
+							concept,
+						};
+					},
+					Err(error) => {
+						input.set_custom_validity(&error.to_string());
+						// if there is an error skip rendering
+						orders.skip();
+					},
+				}
+			// skip if html chehcks didnt pass
+			} else {
+				orders.skip();
+			}
+		},
+		// handle concept index
+		Event::Index(_, data) => {
+			let concept = Concept::from_index_str(&data.pget("input"), model.length).expect("failed to create `Concept`");
 
 			model.view = ModelView::Concept {
 				page: concept.page(),
@@ -312,11 +382,14 @@ fn update(event: Event, model: &mut Model, orders: &mut impl Orders<Event>) {
 			// make sure html checks are passed
 			if input.check_validity() {
 				// we want to display custom error messages if concept wasn't generated
-				if let Err(error) = Concept::from_str(&value) {
+				if let Err(error) = Concept::from_str(&value, Accent::UywiChiffre) {
 					input.set_custom_validity(&error.to_string());
 					// if there is an error skip rendering
 					orders.skip();
 				}
+			// skip if html chehcks didnt pass
+			} else {
+				orders.skip();
 			}
 		},
 		// handle clicking on a link to forms
@@ -341,8 +414,7 @@ pub fn main() {
 		init(Config::new(Level::Trace).message_on_new_line());
 	}
 
-	App::build(|_, _| return Model::default(), update, view)
+	App::build(|_, _| return Init::new(Model::default()), update, view)
 		.mount(seed::body())
-		.finish()
-		.run();
+		.build_and_start();
 }

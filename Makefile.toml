@@ -63,10 +63,18 @@ env = { GECKODRIVER = "res/tools/geckodriver" }
 command = "cargo"
 args = ["test", "-p", "uywi"]
 
-[tasks.doc]
+[tasks.doc-public]
+command = "cargo"
+args = ["doc", "--no-deps"]
+
+[tasks.doc-public-open]
+command = "cargo"
+args = ["doc", "--no-deps", "--open"]
+
+[tasks.doc-private]
 command = "cargo"
 args = ["doc", "--no-deps", "--document-private-items"]
 
-[tasks.doc-open]
+[tasks.doc-private-open]
 command = "cargo"
 args = ["doc", "--no-deps", "--document-private-items", "--open"]
