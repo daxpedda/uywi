@@ -1,0 +1,6 @@
+[target.'cfg(windows)']
+rustflags = ["-C", "linker-flavor=lld-link"]
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-bindgen-test-runner"
+rustflags = ["-C", "linker-flavor=wasm-ld"]

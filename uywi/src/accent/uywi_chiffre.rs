@@ -7,11 +7,11 @@ use arrayvec::{ArrayString, ArrayVec};
 use std::mem;
 
 /// Accent instantiation. Used to return from enum without [`Box`].
-pub(crate) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
+pub(super) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
 
 /// UYWI Chiffre.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct UywiChiffre {}
+pub(super) struct UywiChiffre {}
 
 impl AccentExt for UywiChiffre {
 	fn build_concept(&self, string: &str) -> Result<Concept> {
@@ -67,7 +67,7 @@ impl AccentExt for UywiChiffre {
 		return Ok(Concept::new(radicals, length));
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; 64]> {
+	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
@@ -77,43 +77,27 @@ impl AccentExt for UywiChiffre {
 		return string;
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; 64]> {
+	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
 		// get concept radicals
 		let concept_radicals = concept.radicals();
 		// get correct form config
 		let vocals = form_configs(concept.length(), form_index);
 		// get correct structure
-		let structure = &mut structure::structures(concept.length(), stem_index);
-
-		// search for a `x v* x` pattern in a structure and remove last `x` if found
-		for index in 0..structure.len().psub(2) {
-			if let Letter::Duplicate = structure[index] {
-				if let Letter::Vocal(..) = structure[index.padd(1)] {
-					if let Letter::Duplicate = structure[index.padd(2)] {
-						structure.pop();
-					}
-				}
-			}
-		}
+		let structure = structure::structures(concept.length(), stem_index);
 
 		let mut string = ArrayString::new();
 
-		let mut last_letter = None;
-
 		for letter in structure {
 			// print the right letter
-			last_letter = match letter {
-				Letter::Consonant(radical_index) => {
-					let concept_radical_index = usize::from(*radical_index);
+			match letter {
+				Letter::Consonant(radical_index) | Letter::DuplicateConsonant(radical_index) => {
+					let concept_radical_index = usize::from(radical_index);
 					let radical_index = usize::from(concept_radicals[concept_radical_index].index());
 
-					Some(accent_radicals()[radical_index])
+					string.push_str(accent_radicals()[radical_index])
 				},
-				Letter::Vocal(vocal) => Some(vocals.get(*vocal)),
-				Letter::Duplicate => last_letter,
+				Letter::Vocal(vocal) | Letter::DuplicateVocal(vocal) | Letter::Nasal(vocal) => string.push_str(vocals.get(vocal)),
 			};
-
-			string.push_str(last_letter.expect("no last letter found"));
 		}
 
 		return string;
@@ -144,11 +128,11 @@ fn form_configs(length: Length, form_index: u8) -> Vocals {
 /// Stores vocals.
 /// Purely there to make it easier to extract vocals with [`Vocal`].
 #[derive(Clone, Copy, Debug)]
-struct Vocals(pub(crate) &'static str, pub(crate) &'static str);
+struct Vocals(&'static str, &'static str);
 
 impl Vocals {
 	/// Gets the right vocal with [`Vocal`].
-	pub fn get(&self, vocal: Vocal) -> &'static str {
+	fn get(&self, vocal: Vocal) -> &'static str {
 		return match vocal {
 			Vocal::First => self.0,
 			Vocal::Last => self.1,

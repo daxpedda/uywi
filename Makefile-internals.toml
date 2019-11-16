@@ -1,0 +1,299 @@
+### SETTINGS ###
+
+[config]
+skip_core_tasks = true
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+CARGO_MAKE_RUN_PATH = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+CARGO_MAKE_HOST_TRIPLE = "${CARGO_MAKE_RUST_TARGET_ARCH}-${CARGO_MAKE_RUST_TARGET_VENDOR}-${CARGO_MAKE_RUST_TARGET_OS}-${CARGO_MAKE_RUST_TARGET_ENV}"
+
+### GENERAL TASKS ###
+
+[tasks.set-members]
+private = true
+workspace = false
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${CARGO_MAKE_TASK_ARGS}" }
+
+### BUILD WEB ###
+
+[tasks.web-check]
+private = true
+condition = { env_not_set = ["CARGO_MAKE_WEB_PATH"] }
+script_runner = "@shell"
+script = [
+	'''
+	echo Please define `CARGO_MAKE_WEB_PATH` to dump the wasm file to.
+	exit 1
+	'''
+]
+
+[tasks.web-build-dev]
+private = true
+command = "cargo"
+args = ["build", "-Z", "config-profile"]
+
+[tasks.web-build-release]
+private = true
+command = "cargo"
+args = [
+	"build",
+	"--profile", "release-web",
+	"-Z", "config-profile",
+	"-Z", "build-std",
+	"-Z", "unstable-options",
+]
+
+[tasks.web-clean-snippets]
+private = true
+condition = { files_exist = ["${CARGO_MAKE_WEB_PATH}/snippets/"] }
+script_runner = "@shell"
+script = ["rm -Rf \"${CARGO_MAKE_WEB_PATH}/snippets/\""]
+
+[tasks.web-bindgen-dev]
+private = true
+command = "wasm-bindgen"
+args = [
+	"--target", "web",
+	"--no-typescript",
+	"--out-dir", "${CARGO_MAKE_WEB_PATH}/",
+	"${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/wasm32-unknown-unknown/debug/${CARGO_MAKE_CRATE_NAME}.wasm",
+]
+
+[tasks.web-bindgen-release]
+private = true
+command = "wasm-bindgen"
+args = [
+	"--target", "web",
+	"--no-typescript",
+	"--out-dir", "${CARGO_MAKE_WEB_PATH}/",
+	"--remove-producers-section",
+	"${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/wasm32-unknown-unknown/release-web/${CARGO_MAKE_CRATE_NAME}.wasm",
+]
+
+[tasks.web-wasm-opt]
+private = true
+command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res/tools/wasm-opt"
+args = ["-Os", "-o", "${CARGO_MAKE_WEB_PATH}/${CARGO_MAKE_CRATE_NAME}_bg.wasm", "${CARGO_MAKE_WEB_PATH}/${CARGO_MAKE_CRATE_NAME}_bg.wasm"]
+
+### BUILD ###
+
+[tasks.build-internal]
+private = true
+run_task = [
+	{ name = "build-dev-web", condition = { profiles = ["development"], env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "build-dev", condition = { profiles = ["development"] } },
+	{ name = "build-release-web", condition = { profiles = ["release"], env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "build-release", condition = { profiles = ["release"] } },
+]
+
+[tasks.build-dev]
+private = true
+command = "cargo"
+args = [
+	"build",
+	"--target", "${CARGO_MAKE_HOST_TRIPLE}",
+	"-Z", "config-profile",
+]
+
+[tasks.build-dev-web]
+private = true
+dependencies = ["web-check", "web-build-dev", "web-clean-snippets", "web-bindgen-dev"]
+
+[tasks.build-release]
+private = true
+command = "cargo"
+args = [
+	"build",
+	"--release",
+	"--target", "${CARGO_MAKE_HOST_TRIPLE}",
+	"-Z", "config-profile",
+	"-Z", "build-std",
+]
+
+[tasks.build-release-web]
+private = true
+dependencies = ["web-check", "web-build-release", "web-clean-snippets", "web-bindgen-release", "web-wasm-opt"]
+
+### RUN ###
+
+[tasks.run-check]
+private = true
+workspace = false
+condition = { env = { CARGO_MAKE_TASK_ARGS = "" }, env_true = ["CARGO_MAKE_CRATE_IS_WORKSPACE"] }
+script_runner = "@shell"
+script = [
+	'''
+	echo Please pass which binary to run.
+	exit 1
+	'''
+]
+
+[tasks.run-internal]
+private = true
+dependencies = ["run-build"]
+run_task = [
+	{ name = "run-web", condition = { env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "run-dev", condition = { profiles = ["development"] } },
+	{ name = "run-release", condition = { profiles = ["release"] } },
+]
+
+[tasks.run-build]
+private = true
+run_task = [{ name = "internal-build" }]
+
+[tasks.run-web.linux]
+private = true
+script = ["xdg-open \"http://localhost:8000\""]
+
+[tasks.run-web.mac]
+private = true
+script = ["open \"http://localhost:8000\""]
+
+[tasks.run-web.windows]
+private = true
+script = ["cmd /c start \"\" \"http://localhost:8000\""]
+
+[tasks.run-dev]
+private = true
+cwd = "${CARGO_MAKE_RUN_PATH}"
+command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_HOST_TRIPLE}/debug/${CARGO_MAKE_CRATE_NAME}"
+
+[tasks.run-release]
+private = true
+cwd = "${CARGO_MAKE_RUN_PATH}"
+command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_HOST_TRIPLE}/release/${CARGO_MAKE_CRATE_NAME}"
+
+### CHECK ###
+
+[tasks.check-internal]
+private = true
+dependencies = ["check-clippy", "check-fmt"]
+
+[tasks.check-clippy]
+private = true
+command = "cargo"
+args = ["clippy"]
+
+[tasks.check-fmt]
+private = true
+command = "cargo"
+args = ["fmt"]
+
+### TEST ###
+
+[tasks.test-internal]
+private = true
+run_task = [
+	{ name = "test-dev", condition = { profiles = ["development"] } },
+	{ name = "test-release", condition = { profiles = ["release"] } },
+]
+
+[tasks.test-dev]
+private = true
+env = { GECKODRIVER = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res/tools/geckodriver" }
+command = "cargo"
+args = ["test"]
+
+[tasks.test-release]
+private = true
+env = { GECKODRIVER = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res/tools/geckodriver" }
+command = "cargo"
+args = ["test", "--release"]
+
+### DOC ###
+
+[tasks.doc-public]
+private = true
+command = "cargo"
+args = ["doc", "--no-deps"]
+
+[tasks.doc-private]
+private = true
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items"]
+
+[tasks.doc-public-open]
+private = true
+command = "cargo"
+args = ["doc", "--no-deps", "--open"]
+
+[tasks.doc-private-open]
+private = true
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items", "--open"]
+
+### SERVE ###
+
+[tasks.serve-check-arg]
+private = true
+workspace = false
+condition = { env = { CARGO_MAKE_TASK_ARGS = "" } }
+script_runner = "@shell"
+script = [
+	'''
+	echo Please pass which crate to serve.
+	exit 1
+	'''
+]
+
+[tasks.serve-internal]
+private = true
+dependencies = ["serve-check-path", "serve-serve"]
+
+[tasks.serve-check-path]
+private = true
+condition = { env_not_set = ["CARGO_MAKE_WEB_PATH"] }
+script_runner = "@shell"
+script = [
+	'''
+	echo Please define `CARGO_MAKE_WEB_PATH` to serve from.
+	exit 1
+	'''
+]
+
+[tasks.serve-serve]
+private = true
+command = "http"
+args = ["-r", "${CARGO_MAKE_WEB_PATH}/"]
+
+### TASKS ###
+
+[tasks.internal-build]
+private = true
+workspace = false
+dependencies = ["set-members"]
+run_task = [{ name = "build-internal" }]
+
+[tasks.internal-run]
+private = true
+workspace = false
+dependencies = ["run-check", "set-members"]
+run_task = [{ name = "run-internal" }]
+
+[tasks.internal-check]
+private = true
+workspace = false
+dependencies = ["set-members"]
+run_task = [{ name = "check-internal" }]
+
+[tasks.internal-test]
+private = true
+workspace = false
+dependencies = ["set-members"]
+run_task = [{ name = "test-internal" }]
+
+[tasks.internal-doc]
+private = true
+run_task = [
+	{ name = "doc-public-open", condition = { profiles = ["public"], env = { CARGO_MAKE_TASK_ARGS = "open" } } },
+	{ name = "doc-private-open", condition = { env = { CARGO_MAKE_TASK_ARGS = "open" } } },
+	{ name = "doc-public", condition = { profiles = ["public"] } },
+	{ name = "doc-private" },
+]
+
+[tasks.internal-serve]
+private = true
+workspace = false
+dependencies = ["serve-check-arg", "set-members"]
+run_task = [{ name = "serve-internal" }]

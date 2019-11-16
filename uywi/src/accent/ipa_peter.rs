@@ -5,136 +5,432 @@ use crate::*;
 use arrayvec::{ArrayString, ArrayVec};
 
 /// Accent instantiation. Used to return from enum without [`Box`].
-pub(crate) const IPA_PETER: IpaPeter = IpaPeter {};
+pub(super) const IPA_PETER: IpaPeter = IpaPeter {};
 
 /// UYWI Chiffre.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct IpaPeter {}
+pub(super) struct IpaPeter {}
 
 impl AccentExt for IpaPeter {
 	fn build_concept(&self, _string: &str) -> Result<Concept> {
 		unimplemented!("build concept for ipa peter is unimplemented")
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; 64]> {
+	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
 			let radical = accent_radicals()[usize::from(radical.index())];
-			string.push_str(radical.radical());
-			string.push_str(radical.quality().as_str());
+			string.push_str(&radical.as_str(true, false));
 		}
 
 		return string;
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; 64]> {
-		// get concept radicals
-		let concept_radicals = concept.radicals();
-		// get correct form config
-		let vocals = form_configs(concept.length(), form_index);
+	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
 		// get correct structure
-		let structure = &mut structure::structures(concept.length(), stem_index);
+		let structure = structure::structures(concept.length(), stem_index);
+		// save ipa specfici structure
+		let mut ipa_structure = ArrayVec::<[_; 8]>::new();
 
-		let mut letters = ArrayVec::<[ArrayString<[_; 8]>; 9]>::new();
+		word_base(&structure, concept, form_index, &mut ipa_structure);
+		assimilation_1(&mut ipa_structure);
+		assimilation_2(&mut ipa_structure);
+		assimilation_3(&mut ipa_structure);
+		assimilation_4(&mut ipa_structure);
+		assimilation_5(&mut ipa_structure);
+		assimilation_6(&structure, &mut ipa_structure);
+		assimilation_7(&structure, &mut ipa_structure);
 
-		for (position, letter_structure) in structure.into_iter().enumerate() {
-			let mut letter = ArrayString::<[_; 8]>::new();
-
-			// first level
-			match letter_structure {
-				Letter::Consonant(radical_index) => {
-					let concept_radical_index = usize::from(*radical_index);
-					let radical_index = usize::from(concept_radicals[concept_radical_index].index());
-					let radical = accent_radicals()[radical_index];
-
-					letter.push_str(radical.radical());
-
-					if radical.quality_visible() {
-						letter.push_str(radical.quality().as_str());
-					}
-				},
-				Letter::Vocal(vocal) => letter.push_str(vocals.get(*vocal)),
-				Letter::Duplicate => letter.push_str(&letters[position.psub(1)]),
-			};
-
-			letters.push(letter);
-		}
-
+		// build word
 		let mut word = ArrayString::new();
 
-		for letter in letters {
-			word.push_str(letter.as_str())
+		for letter_ipa in ipa_structure {
+			match letter_ipa {
+				IpaLetter::Radical(radical, alternative) => word.push_str(&radical.as_str(false, alternative)),
+				IpaLetter::Vocal(vocal) => word.push_str(vocal.as_str()),
+				IpaLetter::Duplicate => word.push_str("ː"),
+				IpaLetter::Removed => (),
+			}
 		}
 
 		return word;
 	}
 }
 
+/// Build base of the word: insert concept radicals, fix stem and form structure and insert neutral vocals.
+fn word_base(structure: &ArrayVec<[Letter; 8]>, concept: Concept, form_index: u8, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	// get concept radicals
+	let concept_radicals = concept.radicals();
+	// get correct form config
+	let vocals = form_configs(concept.length(), form_index);
+
+	for letter_structure in structure {
+		match letter_structure {
+			Letter::Consonant(radical_index) => {
+				let concept_radical_index = usize::from(*radical_index);
+				let radical_index = usize::from(concept_radicals[concept_radical_index].index());
+				let radical = accent_radicals()[radical_index];
+
+				ipa_structure.push(IpaLetter::Radical(radical, false));
+			},
+			Letter::Vocal(vocal) | Letter::Nasal(vocal) => {
+				let vocal = vocals.get(*vocal);
+				ipa_structure.push(IpaLetter::Vocal(vocal));
+			},
+			Letter::DuplicateConsonant(..) | Letter::DuplicateVocal(..) => {
+				ipa_structure.push(IpaLetter::Duplicate);
+			},
+		}
+	}
+}
+
+/// First assimilation: turn all vocals around dark consonants to dark vocals.
+fn assimilation_1(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if its quality is dark
+			if letter.is_dark() {
+				// if there is something before it check if it's a vocal
+				if position > 0 {
+					let mut position = position.psub(1);
+
+					// if duplicate check the one before it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.psub(1);
+					}
+
+					// turn it dark
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_dark()
+					}
+				}
+
+				// if there is something after it check if it's a vocal
+				if position.padd(1) < ipa_structure.len() {
+					let mut position = position.padd(1);
+
+					// if duplicate check the one after it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.padd(1);
+					}
+
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_dark()
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Second assimilation: turn all vocals around light consonants to light vocals.
+fn assimilation_2(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if its quality is light
+			if letter.is_light() {
+				// if there is something before it check if it's a vocal
+				if position > 0 {
+					let mut position = position.psub(1);
+
+					// if duplicate check the one before it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.psub(1);
+					}
+
+					// turn it light
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_light()
+					}
+				}
+
+				// if there is something after it check if it's a vocal
+				if position.padd(1) < ipa_structure.len() {
+					let mut position = position.padd(1);
+
+					// if duplicate check the one after it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.padd(1);
+					}
+
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_light()
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Third assimilation: turn all vocals after shading consonants to shading vocals.
+fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if its shading
+			if letter.is_shading() {
+				// if there is something after it check if it's a vocal
+				if position.padd(1) < ipa_structure.len() {
+					let mut position = position.padd(1);
+
+					// if duplicate check the one after it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.padd(1);
+					}
+
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_shading()
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Fourth assimilation: turn all vocals after rounding consonants to rounding vocals.
+fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if its rounding
+			if letter.is_rounding() {
+				// if there is something after it check if it's a vocal
+				if position.padd(1) < ipa_structure.len() {
+					let mut position = position.padd(1);
+
+					// if duplicate check the one after it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.padd(1);
+					}
+
+					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
+						vocal.as_rounding()
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Fifth assimilation: turn all consonants around voiceless consonants that are [`Alternative`](Quality3::Alternative) to their alternative form.
+fn assimilation_5(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if voiceless
+			if letter.is_voiceless() {
+				// if there is something before it check if it's a consonant
+				if position > 0 {
+					// turn consonant to alternative
+					if let IpaLetter::Radical(letter, alternative) = &mut ipa_structure[position.psub(1)] {
+						if letter.alternative().is_some() {
+							*alternative = true;
+						}
+					}
+				}
+
+				// if there is something after it check if it's a consonant
+				if position.padd(1) < ipa_structure.len() {
+					if let IpaLetter::Radical(letter, alternative) = &mut ipa_structure[position.padd(1)] {
+						if letter.alternative().is_some() {
+							*alternative = true;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Sixth assimilation: if the consonant should be removed at the beginning or end, remove it.
+fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	{
+		// filter only for radicals and get the first one
+		let position = structure
+			.iter()
+			.enumerate()
+			.filter_map(|(position, letter)| {
+				if let Letter::Consonant(..) = letter {
+					return Some(position);
+				} else {
+					return None;
+				}
+			})
+			.nth(0)
+			.expect("no consonant found");
+
+		let letter = &mut ipa_structure[position];
+
+		if let IpaLetter::Radical(radical, _) = letter {
+			// remove if consonant is beginning
+			if radical.is_beginning() {
+				*letter = IpaLetter::Removed;
+			}
+		} else {
+			unreachable!("ipa and letter structure don't match");
+		}
+	}
+
+	{
+		// filter only for radicals and get the last one
+		let position = structure
+			.iter()
+			.enumerate()
+			.filter_map(|(position, letter)| {
+				if let Letter::Consonant(..) = letter {
+					return Some(position);
+				} else {
+					return None;
+				}
+			})
+			.last()
+			.expect("no consonant found");
+
+		let letter = &mut ipa_structure[position];
+
+		if let IpaLetter::Radical(radical, _) = letter {
+			// remove if consonant is end
+			if radical.is_end() {
+				*letter = IpaLetter::Removed;
+
+				// remove all letters afterwards except the nasal
+				for letter in ipa_structure
+					.iter_mut()
+					.zip(structure)
+					.skip(position)
+					.filter_map(|(letter_ipa, letter_structure)| {
+						if let Letter::Nasal(..) = letter_structure {
+							return None;
+						} else {
+							return Some(letter_ipa);
+						}
+					}) {
+					*letter = IpaLetter::Removed;
+				}
+
+				let mut nasal_found = None;
+
+				// if the last letter before the nasal is a vocal, remove it
+				for (letter_ipa, letter_structure) in ipa_structure.iter_mut().zip(structure).rev() {
+					// if we find the nasal, save that we found it
+					if let Letter::Nasal(..) = letter_structure {
+						nasal_found = Some(letter_ipa);
+						continue;
+					}
+
+					match letter_ipa {
+						// if we found a vocal
+						IpaLetter::Vocal(..) => {
+							// check if we already found the nasal
+							if let Some(nasal_found) = nasal_found {
+								// assign found vocal to nasal
+								*nasal_found = *letter_ipa;
+								*letter_ipa = IpaLetter::Removed;
+								break;
+							// otherwise there was no nasal
+							} else {
+								break;
+							}
+						},
+						// if we find anything else than `Removed` we break
+						IpaLetter::Removed => continue,
+						_ => break,
+					}
+				}
+			}
+		} else {
+			unreachable!("ipa and letter structure don't match");
+		}
+	}
+}
+
+/// Seventh assimilation: turn vocals that should be nasal to nasal.
+fn assimilation_7(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (letter_structure, letter_ipa) in structure.iter().zip(ipa_structure) {
+		// check if this is a nasal
+		if let Letter::Nasal(..) = letter_structure {
+			if let IpaLetter::Vocal(vocal) = letter_ipa {
+				vocal.as_nasal();
+			} else {
+				unreachable!("ipa and letter structure don't match");
+			}
+		}
+	}
+}
+
 /// List of radicals with all exceptions.
 const fn accent_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
-	use Assimilation2::*;
-	use Assimilation3::*;
-	use Assimilation4::*;
-	use Assimilation5::*;
-	use Quality::*;
+	use Quality1::*;
+	use Quality2::*;
+	use Quality3::*;
+	use Quality4::*;
 
 	#[rustfmt::skip]
 	return [
-        IpaRadical("ʔ",  Neutral, false, None,           None,             Some(Exception2), None),
-        IpaRadical("j",  Dark,    false, None,           None,             None,             None),
-        IpaRadical("w",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("h",  Neutral, false, None,           Some(Voiceless),  Some(Exception3), None),
-        IpaRadical("ʕ",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("ħ",  Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("k",  Dark,    false, Some(Shading),  Some(Voiceless),  None,             None),
-        IpaRadical("kʰ", Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("x",  Dark,    false, Some(Shading),  Some(Voiceless),  None,             None),
-        IpaRadical("x",  Light,   false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("ʁ",  Neutral, false, None,           Some(Exception1), None,             None),
-        IpaRadical("ɟ",  Neutral, false, None,           Some(Exception1), None,             None),
-        IpaRadical("g",  Dark,    false, Some(Shading),  None,             None,             None),
-        IpaRadical("g",  Light,   false, None,           None,             None,             None),
-        IpaRadical("ɥ",  Light,   false, Some(Rounding), None,             None,             None),
-        IpaRadical("d͡ʐ", Dark,    false, Some(Shading),  None,             None,             None),
-        IpaRadical("d͡ʒ", Neutral, false, None,           None,             None,             None),
-        IpaRadical("ʂ",  Dark,    false, Some(Shading),  Some(Voiceless),  None,             None),
-        IpaRadical("ɕ",  Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("ʃ",  Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("s",  Dark,    false, Some(Shading),  Some(Voiceless),  None,             None),
-        IpaRadical("s",  Light,   true,  None,           Some(Voiceless),  None,             None),
-        IpaRadical("z",  Dark,    false, Some(Shading),  None,             None,             None),
-        IpaRadical("z",  Light,   false, None,           None,             None,             Some(Palatalization)),
-        IpaRadical("d",  Dark,    false, Some(Shading),  None,             None,             None),
-        IpaRadical("d",  Light,   false, None,           None,             None,             Some(Palatalization)),
-        IpaRadical("t",  Dark,    false, Some(Shading),  Some(Voiceless),  None,             None),
-        IpaRadical("tʰ", Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("t͡ɕ", Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("t͡s", Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("θ",  Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("ð",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("v",  Dark,    false, None,           None,             None,             None),
-        IpaRadical("f",  Neutral, false, None,           Some(Voiceless),  None,             None),
-        IpaRadical("p",  Neutral, false, Some(Rounding), Some(Voiceless),  None,             None),
-        IpaRadical("b",  Neutral, false, Some(Rounding), None,             None,             None),
-        IpaRadical("m",  Neutral, false, Some(Rounding), None,             None,             None),
-        IpaRadical("n",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("ŋ",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("ɻ",  Dark,    false, Some(Rounding), None,             None,             None),
-        IpaRadical("r",  Neutral, false, None,           None,             None,             None),
-        IpaRadical("l",  Light,   true,  None,           None,             None,             None),
-        IpaRadical("ʟ",  Dark,    false, Some(Shading),  None,             None,             None),
-        IpaRadical("l",  Neutral, false, None,           None,             None,             None),
+        IpaRadical("ʔ",  Neutral, false, None,           None,                   Some(Beginning)),
+        IpaRadical("j",  Dark,    false, None,           None,                   None),
+        IpaRadical("w",  Neutral, false, None,           None,                   None),
+        IpaRadical("h",  Neutral, false, None,           Some(Voiceless),        Some(End)),
+        IpaRadical("ʕ",  Neutral, false, None,           None,                   None),
+        IpaRadical("ħ",  Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("k",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+        IpaRadical("kʰ", Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("x",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+        IpaRadical("x",  Light,   false, None,           Some(Voiceless),        None),
+        IpaRadical("ʁ",  Neutral, false, None,           Some(Alternative("χ")), None),
+        IpaRadical("ɟ",  Neutral, false, None,           Some(Alternative("c")), None),
+        IpaRadical("g",  Dark,    false, Some(Shading),  None,                   None),
+        IpaRadical("g",  Light,   false, None,           None,                   None),
+        IpaRadical("ɥ",  Light,   false, Some(Rounding), None,                   None),
+        IpaRadical("d͡ʐ", Dark,    false, Some(Shading),  None,                   None),
+        IpaRadical("d͡ʒ", Neutral, false, None,           None,                   None),
+        IpaRadical("ʂ",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+        IpaRadical("ɕ",  Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("ʃ",  Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("s",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+        IpaRadical("s",  Light,   true,  None,           Some(Voiceless),        None),
+        IpaRadical("z",  Dark,    false, Some(Shading),  None,                   None),
+        IpaRadical("z",  Light,   true,  None,           None,                   None),
+        IpaRadical("d",  Dark,    false, Some(Shading),  None,                   None),
+        IpaRadical("d",  Light,   true,  None,           None,                   None),
+        IpaRadical("t",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+        IpaRadical("tʰ", Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("t͡ɕ", Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("t͡s", Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("θ",  Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("ð",  Neutral, false, None,           None,                   None),
+        IpaRadical("v",  Dark,    false, None,           None,                   None),
+        IpaRadical("f",  Neutral, false, None,           Some(Voiceless),        None),
+        IpaRadical("p",  Neutral, false, Some(Rounding), Some(Voiceless),        None),
+        IpaRadical("b",  Neutral, false, Some(Rounding), None,                   None),
+        IpaRadical("m",  Neutral, false, Some(Rounding), None,                   None),
+        IpaRadical("n",  Neutral, false, None,           None,                   None),
+        IpaRadical("ŋ",  Neutral, false, None,           None,                   None),
+        IpaRadical("ɻ",  Dark,    false, Some(Rounding), None,                   None),
+        IpaRadical("r",  Neutral, false, None,           None,                   None),
+        IpaRadical("l",  Light,   true,  None,           None,                   None),
+        IpaRadical("ʟ",  Dark,    false, Some(Shading),  None,                   None),
+        IpaRadical("l",  Neutral, false, None,           None,                   None),
 	];
 }
 
 /// List how forms are configured.
 fn form_configs(length: Length, form_index: u8) -> Vocals {
+	use IpaVocal::*;
+
 	let mut configs = ArrayVec::<[_; 4]>::new();
 
 	match length {
-		Length::L2 => configs.try_extend_from_slice(&[Vocals("a", "a"), Vocals("i", "i")]),
-		Length::L3 | Length::L4 => configs.try_extend_from_slice(&[Vocals("a", "e"), Vocals("e", "i"), Vocals("u", "a"), Vocals("u", "i")]),
+		Length::L2 => configs.try_extend_from_slice(&[Vocals(NeutralA, NeutralA), Vocals(NeutralI, NeutralI)]),
+		Length::L3 | Length::L4 => configs.try_extend_from_slice(&[
+			Vocals(NeutralA, NeutralE),
+			Vocals(NeutralE, NeutralI),
+			Vocals(NeutralU, NeutralA),
+			Vocals(NeutralU, NeutralI),
+		]),
 	}
 	.expect("failed to fill form configs");
 
@@ -143,36 +439,110 @@ fn form_configs(length: Length, form_index: u8) -> Vocals {
 
 /// Save radicals with all the exceptions.
 #[derive(Clone, Copy, Debug)]
-struct IpaRadical(
-	&'static str,
-	Quality,
-	bool,
-	Option<Assimilation2>,
-	Option<Assimilation3>,
-	Option<Assimilation4>,
-	Option<Assimilation5>,
-);
+struct IpaRadical(&'static str, Quality1, bool, Option<Quality2>, Option<Quality3>, Option<Quality4>);
 
 impl IpaRadical {
 	/// Get radical in string form.
-	const fn radical(self) -> &'static str {
-		return self.0;
+	fn as_str(self, force_quality: bool, alternative: bool) -> ArrayString<[u8; 8]> {
+		// start with original or with alternative
+		let mut string = ArrayString::from({
+			if alternative {
+				self.alternative().expect("no alternative found")
+			} else {
+				self.0
+			}
+		})
+		.expect("failed to turn radical to string");
+
+		// sow quality if forced or part of the letter
+		if force_quality || self.2 {
+			string.push_str(self.quality().as_str())
+		}
+
+		return string;
 	}
 
 	/// Get radical's quality.
-	const fn quality(self) -> Quality {
+	const fn quality(self) -> Quality1 {
 		return self.1;
 	}
 
-	/// Get radical's quality.
-	const fn quality_visible(self) -> bool {
-		return self.2;
+	/// Get if radical is dark.
+	fn is_dark(self) -> bool {
+		if let Quality1::Dark = self.1 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get if radical is light.
+	fn is_light(self) -> bool {
+		if let Quality1::Light = self.1 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get if radical is shading.
+	fn is_shading(self) -> bool {
+		if let Some(Quality2::Shading) = self.3 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get if radical is rounding.
+	fn is_rounding(self) -> bool {
+		if let Some(Quality2::Rounding) = self.3 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get radical's alternative.
+	fn is_voiceless(self) -> bool {
+		if let Some(Quality3::Voiceless) = self.4 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get radical's alternative.
+	fn alternative(self) -> Option<&'static str> {
+		if let Some(Quality3::Alternative(alternative)) = self.4 {
+			return Some(alternative);
+		} else {
+			return None;
+		}
+	}
+
+	/// Get if radical has a quality that removes it a the beginning of a word.
+	fn is_beginning(self) -> bool {
+		if let Some(Quality4::Beginning) = self.5 {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/// Get if radical has a quality that removes it a the end of a word.
+	fn is_end(self) -> bool {
+		if let Some(Quality4::End) = self.5 {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }
 
-/// First level of assmiliation.
+/// Quality of radical.
 #[derive(Clone, Copy, Debug)]
-enum Quality {
+enum Quality1 {
 	/// Neutral radical.
 	Neutral,
 	/// Dark radical.
@@ -181,7 +551,7 @@ enum Quality {
 	Light,
 }
 
-impl Quality {
+impl Quality1 {
 	/// Get's `str` form of quality.
 	fn as_str(self) -> &'static str {
 		return match self {
@@ -192,51 +562,165 @@ impl Quality {
 	}
 }
 
-///
+/// Shading and rounding.
 #[derive(Clone, Copy, Debug)]
-enum Assimilation2 {
-	/// ^
+enum Quality2 {
+	/// Shading.
 	Shading,
-	/// ʷ
+	/// Rounding.
 	Rounding,
 }
 
-///
+/// Voiceless and alternatives.
 #[derive(Clone, Copy, Debug)]
-enum Assimilation3 {
-	/// '
+enum Quality3 {
+	/// Voiceless.
 	Voiceless,
-	/// 8 & 4
-	Exception1,
+	/// Alternative consonant.
+	Alternative(&'static str),
 }
 
-///
+/// Remove if at beginning or end.
 #[derive(Clone, Copy, Debug)]
-enum Assimilation4 {
-	/// ?
-	Exception2,
-	/// h
-	Exception3,
-}
-
-///
-#[derive(Clone, Copy, Debug)]
-enum Assimilation5 {
-	///
-	Palatalization,
+enum Quality4 {
+	/// Remove when its at the beginning.
+	Beginning,
+	/// Remove when its at the End.
+	End,
 }
 
 /// Stores vocals.
 /// Purely there to make it easier to extract vocals with [`Vocal`].
 #[derive(Clone, Copy, Debug)]
-struct Vocals(pub(crate) &'static str, pub(crate) &'static str);
+struct Vocals(IpaVocal, IpaVocal);
 
 impl Vocals {
 	/// Gets the right vocal with [`Vocal`].
-	pub fn get(&self, vocal: Vocal) -> &'static str {
+	fn get(self, vocal: Vocal) -> IpaVocal {
 		return match vocal {
 			Vocal::First => self.0,
 			Vocal::Last => self.1,
 		};
+	}
+}
+
+/// Represents letter.
+#[derive(Clone, Copy, Debug)]
+enum IpaLetter {
+	/// Radical.
+	Radical(IpaRadical, bool),
+	/// Vocal.
+	Vocal(IpaVocal),
+	/// Duplicate.
+	Duplicate,
+	/// Removed letter.
+	Removed,
+}
+
+/// Represents vocals.
+#[derive(Clone, Copy, Debug)]
+enum IpaVocal {
+	/// Neutral `a`.
+	NeutralA,
+	/// Neutral `e`.
+	NeutralE,
+	/// Neutral `i`.
+	NeutralI,
+	/// Neutral `u`.
+	NeutralU,
+	/// Dark `a`.
+	DarkA,
+	/// Dark `u`.
+	DarkU,
+	/// Light `e`.
+	LightE,
+	/// Dark `i`.
+	LightI,
+	/// Nasal `a`.
+	NasalA,
+	/// Nasal `e`.
+	NasalE,
+	/// Nasal `i`.
+	NasalI,
+	/// Nasal `u`.
+	NasalU,
+	/// Shading `e`.
+	ShadingE,
+	/// Shading `i`.
+	ShadingI,
+	/// Rounding `a`.
+	RoundingA,
+	/// Rounding `e`.
+	RoundingE,
+	/// Rounding `i`.
+	RoundingI,
+}
+
+impl IpaVocal {
+	/// Get in `str` form.
+	fn as_str(self) -> &'static str {
+		return match self {
+			Self::NeutralA | Self::DarkA => "a",
+			Self::NeutralE | Self::LightE => "e",
+			Self::NeutralI | Self::LightI => "i",
+			Self::NeutralU | Self::DarkU => "u",
+			Self::NasalA => "ɑ̃",
+			Self::NasalE => "ɔ̃",
+			Self::NasalI => "ɛ̃",
+			Self::NasalU => "œ̃",
+			Self::ShadingE => "æ",
+			Self::ShadingI => "ɨ",
+			Self::RoundingA => "ɔ",
+			Self::RoundingE => "ø",
+			Self::RoundingI => "y",
+		};
+	}
+
+	/// Turn vocal dark.
+	fn as_dark(&mut self) {
+		match self {
+			Self::NeutralE => *self = Self::DarkA,
+			Self::NeutralI => *self = Self::DarkU,
+			_ => (),
+		}
+	}
+
+	/// Turn vocal light.
+	fn as_light(&mut self) {
+		match self {
+			Self::NeutralA | Self::DarkA => *self = Self::LightE,
+			Self::NeutralU | Self::DarkU => *self = Self::LightI,
+			_ => (),
+		}
+	}
+
+	/// Turn vocal nasal.
+	fn as_nasal(&mut self) {
+		match self {
+			Self::NeutralA | Self::DarkA => *self = Self::NasalA,
+			Self::NeutralE | Self::LightE => *self = Self::NasalE,
+			Self::NeutralI | Self::LightI => *self = Self::NasalI,
+			Self::NeutralU | Self::DarkU => *self = Self::NasalU,
+			_ => (),
+		}
+	}
+
+	/// Turn vocal shading.
+	fn as_shading(&mut self) {
+		match self {
+			Self::LightE => *self = Self::ShadingE,
+			Self::LightI => *self = Self::ShadingI,
+			_ => (),
+		}
+	}
+
+	/// Turn vocal rounding.
+	fn as_rounding(&mut self) {
+		match self {
+			Self::NeutralA | Self::DarkA => *self = Self::RoundingA,
+			Self::NeutralE | Self::LightE => *self = Self::RoundingE,
+			Self::NeutralI | Self::LightI => *self = Self::RoundingI,
+			_ => (),
+		}
 	}
 }

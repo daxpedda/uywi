@@ -10,8 +10,12 @@ pub(crate) enum Letter {
 	Consonant(u8),
 	/// Represents a vocal.
 	Vocal(Vocal),
-	/// Represents a duplicate.
-	Duplicate,
+	/// Represents a duplicate consonant.
+	DuplicateConsonant(u8),
+	/// Represents a duplicate vocal.
+	DuplicateVocal(Vocal),
+	/// Represents a nasal vocal.
+	Nasal(Vocal),
 }
 
 impl Letter {
@@ -25,6 +29,31 @@ impl Letter {
 	/// Build new [`Letter::Vocal`].
 	pub(crate) fn new_vocal(index: usize) -> Self {
 		return Self::Vocal(match index {
+			0 => Vocal::First,
+			1 => Vocal::Last,
+			_ => unreachable!("vocal index is invalid"),
+		});
+	}
+
+	/// Build new [`Letter::DuplicateConsonant`].
+	pub(crate) fn new_duplicate_consonant(length: Length, index: u8) -> Self {
+		assert!(usize::from(index) < length.as_int(), "consonant index is invalid");
+
+		return Self::DuplicateConsonant(index);
+	}
+
+	/// Build new [`Letter::DuplicateVocal`].
+	pub(crate) fn new_duplicate_vocal(index: usize) -> Self {
+		return Self::DuplicateVocal(match index {
+			0 => Vocal::First,
+			1 => Vocal::Last,
+			_ => unreachable!("vocal index is invalid"),
+		});
+	}
+
+	/// Build new [`Letter::Nasal`].
+	pub(crate) fn new_nasal(index: usize) -> Self {
+		return Self::Nasal(match index {
 			0 => Vocal::First,
 			1 => Vocal::Last,
 			_ => unreachable!("vocal index is invalid"),
@@ -46,23 +75,23 @@ pub(crate) fn structure_list(length: Length) -> ArrayVec<[&'static str; 8]> {
 	let mut configs = ArrayVec::new();
 
 	match length {
-		Length::L2 => configs.try_extend_from_slice(&["c0 v0 c1", "c0 v0 x c1", "c0 v0 c1 x v0 x"]),
+		Length::L2 => configs.try_extend_from_slice(&["c0 v0 c1", "c0 v0 xv0 c1", "c0 v0 c1 xc1 xn0"]),
 		Length::L3 => configs.try_extend_from_slice(&[
 			"c0 v0 c1 v1 c2",
-			"c0 v0 c1 x v1 c2",
-			"c0 v0 x c1 v1 c2",
-			"c0 v0 c1 v1 x c2",
-			"c0 v0 c1 v1 c2 x v1 x",
+			"c0 v0 c1 xc1 v1 c2",
+			"c0 v0 xv0 c1 v1 c2",
+			"c0 v0 c1 v1 xv1 c2",
+			"c0 v0 c1 v1 c2 xc2 xn1",
 		]),
 		Length::L4 => configs.try_extend_from_slice(&[
 			"c0 v0 c1 c2 v1 c3",
 			"c0 v0 c1 v0 c2 v1 c3",
-			"c0 v0 x c1 c2 v1 c3",
-			"c0 v0 c1 c2 v1 x c3",
-			"c0 v0 c1 c2 v1 c3 x v1 x",
-			"c0 v0 c1 v0 x c2 v1 c3",
-			"c0 v0 c1 v0 c2 x v1 c3",
-			"c0 v0 c1 v0 c2 v1 x c3",
+			"c0 v0 xv0 c1 c2 v1 c3",
+			"c0 v0 c1 c2 v1 xv1 c3",
+			"c0 v0 c1 c2 v1 c3 xc3 xn1",
+			"c0 v0 c1 v0 xv0 c2 v1 c3",
+			"c0 v0 c1 v0 c2 xc2 v1 c3",
+			"c0 v0 c1 v0 c2 v1 xv1 c3",
 		]),
 	}
 	.expect("failed to fill stem config internals");
@@ -71,7 +100,7 @@ pub(crate) fn structure_list(length: Length) -> ArrayVec<[&'static str; 8]> {
 }
 
 /// Stem configuration list.
-pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 9]> {
+pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 8]> {
 	let mut configs = ArrayVec::<[_; 8]>::new();
 	let configs_internal = structure_list(length);
 
@@ -80,8 +109,8 @@ pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 9]
 
 		for letter in configs_internal[index].split_whitespace() {
 			debug_assert!(
-				letter.len() == 1 || letter.len() == 2,
-				"configuration option has not exactly 1 or 2 letters"
+				letter.len() == 2 || letter.len() == 3,
+				"configuration option has not exactly 2 or 3 letters"
 			);
 
 			let r#type = &letter[0..1];
@@ -98,7 +127,20 @@ pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 9]
 						_ => unreachable!("configuration type not valid"),
 					}
 				},
-				"x" => config.push(Letter::Duplicate),
+				"x" => {
+					let r#type = &letter[1..2];
+					let index: u8 = letter[2..3].parse().expect("configuration index isn't a number");
+
+					match r#type {
+						// consonant
+						"c" => config.push(Letter::new_duplicate_consonant(length, index)),
+						// vocal
+						"v" => config.push(Letter::new_duplicate_vocal(usize::from(index))),
+						// nasal
+						"n" => config.push(Letter::new_nasal(usize::from(index))),
+						_ => unreachable!("configuration type not valid"),
+					}
+				},
 				_ => unreachable!("configuration type not valid"),
 			}
 		}

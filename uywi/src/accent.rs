@@ -11,6 +11,10 @@ use uywi_chiffre::UYWI_CHIFFRE;
 
 /// Number of possible radicals.
 pub(crate) const NUM_OF_RADICALS: usize = 44;
+/// Size of concept buffer in bytes.
+const CONCEPT_BUFFER: usize = 64;
+/// Size of word buffer in bytes.
+const WORD_BUFFER: usize = 64;
 
 /// Display accent.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -56,11 +60,11 @@ impl AccentExt for Accent {
 		return self.as_ref().build_concept(string);
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; 64]> {
+	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
 		return self.as_ref().build_concept_string(concept);
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; 64]> {
+	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
 		return self.as_ref().build_word(concept, stem_index, form_index);
 	}
 }
@@ -71,8 +75,8 @@ pub(crate) trait AccentExt {
 	fn build_concept(&self, string: &str) -> Result<Concept>;
 
 	/// Build concept string.
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; 64]>;
+	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]>;
 
 	/// Build word.
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; 64]>;
+	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]>;
 }

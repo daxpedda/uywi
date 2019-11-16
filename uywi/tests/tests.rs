@@ -36,7 +36,7 @@ fn touch_all() {
 
 					for stem in concept {
 						for form in stem {
-							form.to_string(accent);
+							let _word = form.to_string(accent);
 						}
 					}
 

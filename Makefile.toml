@@ -1,80 +1,24 @@
-[config]
-skip_core_tasks = true
-default_to_workspace = false
-
-[tasks.internal-build]
-private = true
-command = "cargo"
-args = ["build", "-p", "uywi-web", "--target", "wasm32-unknown-unknown"]
-
-[tasks.internal-build-release]
-private = true
-command = "cargo"
-args = ["build", "-p", "uywi-web", "--release", "--target", "wasm32-unknown-unknown"]
-
-[tasks.internal-clean-snippets]
-private = true
-condition = { files_exist = ["docs/snippets/"] }
-script_runner = "@shell"
-script = ["rm -Rf docs/snippets/"]
-
-[tasks.internal-bindgen]
-private = true
-command = "wasm-bindgen"
-args = [
-	"--target", "web",
-	"--no-typescript",
-	"--out-dir", "docs",
-	"target/wasm32-unknown-unknown/debug/uywi_web.wasm"
-]
-
-[tasks.internal-bindgen-release]
-private = true
-command = "wasm-bindgen"
-args = [
-	"--target", "web",
-	"--no-typescript",
-	"--out-dir", "docs",
-	"--remove-producers-section",
-	"target/wasm32-unknown-unknown/release/uywi_web.wasm"
-]
-
-[tasks.internal-wasm-opt]
-private = true
-command = "res/tools/wasm-opt"
-args = ["-Os", "-o", "docs/uywi_web_bg.wasm", "docs/uywi_web_bg.wasm"]
-
-[tasks.serve]
-command = "http"
-args = ["-r", "docs"]
+extend = "Makefile-internals.toml"
 
 [tasks.build]
-dependencies = ["internal-build", "internal-clean-snippets", "internal-bindgen"]
+workspace = false
+dependencies = ["internal-build"]
 
-[tasks.build-release]
-dependencies = ["internal-build-release", "internal-clean-snippets", "internal-bindgen-release", "internal-wasm-opt"]
+[tasks.run]
+workspace = false
+dependencies = ["internal-run"]
+
+[tasks.check]
+workspace = false
+dependencies = ["internal-check"]
 
 [tasks.test]
-command = "cargo"
-args = ["test"]
+workspace = false
+dependencies = ["internal-test"]
 
-[tasks.test-web]
-env = { GECKODRIVER = "res/tools/geckodriver" }
-command = "cargo"
-args = ["test", "-p", "uywi"]
+[tasks.doc]
+dependencies = ["internal-doc"]
 
-[tasks.doc-public]
-command = "cargo"
-args = ["doc", "--no-deps"]
-
-[tasks.doc-public-open]
-command = "cargo"
-args = ["doc", "--no-deps", "--open"]
-
-[tasks.doc-private]
-command = "cargo"
-args = ["doc", "--no-deps", "--document-private-items"]
-
-[tasks.doc-private-open]
-command = "cargo"
-args = ["doc", "--no-deps", "--document-private-items", "--open"]
+[tasks.serve]
+workspace = false
+dependencies = ["internal-serve"]

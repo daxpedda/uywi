@@ -21,7 +21,6 @@ use seed::{
 };
 use util::*;
 use uywi::{Accent, Concept, Length, Page};
-use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 
 /// Data we save for the app.
@@ -51,6 +50,8 @@ enum ModelView {
 	},
 	/// Show forms.
 	Forms {
+		/// The `Page`.
+		page: Page,
 		/// The `Concept`.
 		concept: Concept,
 	},
@@ -69,8 +70,9 @@ impl ModelView {
 	fn data_to_string(&self) -> ModelDataString {
 		let (page, concept, index) = match self {
 			Self::Page { page } => (page.to_string(), "".into(), "".into()),
-			Self::Concept { page, concept } => (page.to_string(), concept.to_string(Accent::UywiChiffre), concept.index_as_string()),
-			Self::Forms { concept } => ("".into(), concept.to_string(Accent::UywiChiffre), concept.index_as_string()),
+			Self::Concept { page, concept } | Self::Forms { page, concept } => {
+				(page.to_string(), concept.to_string(Accent::UywiChiffre), concept.index_as_string())
+			},
 		};
 
 		return ModelDataString { page, concept, index };
@@ -267,7 +269,7 @@ fn build_table(model: &Model) -> Node<Event> {
 			}
 		},
 		// show forms
-		ModelView::Forms { concept } => {
+		ModelView::Forms { concept, .. } => {
 			// reserve appropriate space for the table
 			table.reserve_children(model.length.stems_per_concept());
 
@@ -394,13 +396,15 @@ fn update(event: Event, model: &mut Model, orders: &mut impl Orders<Event>) {
 		},
 		// handle clicking on a link to forms
 		Event::OpenConcept(concept) => {
-			model.view = ModelView::Forms { concept };
+			model.view = ModelView::Forms {
+				page: concept.page(),
+				concept,
+			};
 		},
 	}
 }
 
-#[wasm_bindgen(start)]
-pub fn main() {
+fn main() {
 	#[cfg(debug_assertions)]
 	{
 		use log::Level;
@@ -411,7 +415,7 @@ pub fn main() {
 		util::set_stacktracelimit(f32::INFINITY);
 
 		// initialize logging
-		init(Config::new(Level::Trace).message_on_new_line());
+		init(Config::new(Level::max()).message_on_new_line());
 	}
 
 	App::build(|_, _| return Init::new(Model::default()), update, view)
