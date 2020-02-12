@@ -25,6 +25,16 @@ pub enum Accent {
 	IpaPeter,
 }
 
+impl Accent {
+	/// Build [`Concept`] or [`Word`] from string.
+	/// # Errors
+	/// Returns [`Error`] on failing to build [`Concept`] or [`Word`] from [`String`].
+	#[allow(clippy::wrong_self_convention)]
+	pub fn from_string(self, string: &str) -> Result<ConceptOrWord> {
+		return self.as_ref().from_string(string);
+	}
+}
+
 impl Default for Accent {
 	#[must_use]
 	fn default() -> Self {
@@ -56,27 +66,60 @@ impl AsRef<dyn AccentExt> for Accent {
 }
 
 impl AccentExt for Accent {
-	fn build_concept(&self, string: &str) -> Result<Concept> {
-		return self.as_ref().build_concept(string);
+	fn accent(&self) -> Accent {
+		return self.as_ref().accent();
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
-		return self.as_ref().build_concept_string(concept);
+	fn from_concept(&self, string: &str) -> Result<Concept> {
+		return self.as_ref().from_concept(string);
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
-		return self.as_ref().build_word(concept, stem_index, form_index);
+	fn from_string(&self, string: &str) -> Result<ConceptOrWord> {
+		return self.as_ref().from_string(string);
+	}
+
+	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
+		return self.as_ref().concept(concept);
+	}
+
+	fn word(&self, word: Word) -> ArrayString<[u8; WORD_BUFFER]> {
+		return self.as_ref().word(word);
 	}
 }
 
 /// Unify all accents under a common API.
 pub(crate) trait AccentExt {
-	/// Build concept radicals from string.
-	fn build_concept(&self, string: &str) -> Result<Concept>;
+	/// Get [`Accent`].
+	fn accent(&self) -> Accent;
+
+	/// Build [`Concept`] radicals from string.
+	fn from_concept(&self, string: &str) -> Result<Concept>;
+
+	/// Build [`Concept`] or [`Word`] from string.
+	fn from_string(&self, string: &str) -> Result<ConceptOrWord>;
 
 	/// Build concept string.
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]>;
+	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]>;
 
 	/// Build word.
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]>;
+	fn word(&self, word: Word) -> ArrayString<[u8; WORD_BUFFER]>;
+}
+
+/// Represents a [`Concept`] or [`Word`], return type from [`from_word`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ConceptOrWord {
+	/// A [`Concept`].
+	Concept(Concept),
+	/// A [`Word`].
+	Word(Word),
+}
+
+impl ConceptOrWord {
+	/// Get string from [`Concept`] or [`Word`].
+	pub fn to_string(self, accent: Accent) -> String {
+		return match self {
+			Self::Concept(concept) => concept.to_string(accent),
+			Self::Word(word) => word.to_string(accent),
+		};
+	}
 }

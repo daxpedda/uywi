@@ -12,11 +12,19 @@ pub(super) const IPA_PETER: IpaPeter = IpaPeter {};
 pub(super) struct IpaPeter {}
 
 impl AccentExt for IpaPeter {
-	fn build_concept(&self, _string: &str) -> Result<Concept> {
+	fn accent(&self) -> Accent {
+		return Accent::IpaPeter;
+	}
+
+	fn from_concept(&self, _string: &str) -> Result<Concept> {
 		unimplemented!("build concept for ipa peter is unimplemented")
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
+	fn from_string(&self, _string: &str) -> Result<ConceptOrWord> {
+		unimplemented!("build word for ipa peter is unimplemented")
+	}
+
+	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
@@ -27,13 +35,14 @@ impl AccentExt for IpaPeter {
 		return string;
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
+	fn word(&self, word: Word) -> ArrayString<[u8; WORD_BUFFER]> {
+		let concept = word.concept();
 		// get correct structure
-		let structure = structure::structures(concept.length(), stem_index);
+		let structure = structure::structures(concept.length(), word.stem_index());
 		// save ipa specfici structure
 		let mut ipa_structure = ArrayVec::<[_; 8]>::new();
 
-		word_base(&structure, concept, form_index, &mut ipa_structure);
+		word_base(&structure, concept, word.form_index(), &mut ipa_structure);
 		assimilation_1(&mut ipa_structure);
 		assimilation_2(&mut ipa_structure);
 		assimilation_3(&mut ipa_structure);
@@ -48,7 +57,7 @@ impl AccentExt for IpaPeter {
 		for letter_ipa in ipa_structure {
 			match letter_ipa {
 				IpaLetter::Radical(radical, alternative) => word.push_str(&radical.as_str(false, alternative)),
-				IpaLetter::Vocal(vocal) => word.push_str(vocal.as_str()),
+				IpaLetter::Vowel(vowel) => word.push_str(vowel.as_str()),
 				IpaLetter::Duplicate => word.push_str("ː"),
 				IpaLetter::Removed => (),
 			}
@@ -58,12 +67,12 @@ impl AccentExt for IpaPeter {
 	}
 }
 
-/// Build base of the word: insert concept radicals, fix stem and form structure and insert neutral vocals.
+/// Build base of the word: insert concept radicals, fix stem and form structure and insert neutral vowels.
 fn word_base(structure: &ArrayVec<[Letter; 8]>, concept: Concept, form_index: u8, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	// get concept radicals
 	let concept_radicals = concept.radicals();
 	// get correct form config
-	let vocals = form_configs(concept.length(), form_index);
+	let vowels = form_configs(concept.length(), form_index);
 
 	for letter_structure in structure {
 		match letter_structure {
@@ -74,25 +83,25 @@ fn word_base(structure: &ArrayVec<[Letter; 8]>, concept: Concept, form_index: u8
 
 				ipa_structure.push(IpaLetter::Radical(radical, false));
 			},
-			Letter::Vocal(vocal) | Letter::Nasal(vocal) => {
-				let vocal = vocals.get(*vocal);
-				ipa_structure.push(IpaLetter::Vocal(vocal));
+			Letter::Vowel(vowel) | Letter::Nasal(vowel) => {
+				let vowel = vowels.get(*vowel);
+				ipa_structure.push(IpaLetter::Vowel(vowel));
 			},
-			Letter::DuplicateConsonant(..) | Letter::DuplicateVocal(..) => {
+			Letter::DuplicateConsonant(..) | Letter::DuplicateVowel(..) => {
 				ipa_structure.push(IpaLetter::Duplicate);
 			},
 		}
 	}
 }
 
-/// First assimilation: turn all vocals around dark consonants to dark vocals.
+/// First assimilation: turn all vowels around dark consonants to dark vowels.
 fn assimilation_1(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
 		if let IpaLetter::Radical(letter, _) = letter_ipa {
 			// check if its quality is dark
 			if letter.is_dark() {
-				// if there is something before it check if it's a vocal
+				// if there is something before it check if it's a vowel
 				if position > 0 {
 					let mut position = position.psub(1);
 
@@ -102,12 +111,12 @@ fn assimilation_1(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 					}
 
 					// turn it dark
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_dark()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_dark()
 					}
 				}
 
-				// if there is something after it check if it's a vocal
+				// if there is something after it check if it's a vowel
 				if position.padd(1) < ipa_structure.len() {
 					let mut position = position.padd(1);
 
@@ -116,8 +125,8 @@ fn assimilation_1(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 						position = position.padd(1);
 					}
 
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_dark()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_dark()
 					}
 				}
 			}
@@ -125,14 +134,14 @@ fn assimilation_1(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Second assimilation: turn all vocals around light consonants to light vocals.
+/// Second assimilation: turn all vowels around light consonants to light vowels.
 fn assimilation_2(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
 		if let IpaLetter::Radical(letter, _) = letter_ipa {
 			// check if its quality is light
 			if letter.is_light() {
-				// if there is something before it check if it's a vocal
+				// if there is something before it check if it's a vowel
 				if position > 0 {
 					let mut position = position.psub(1);
 
@@ -142,12 +151,12 @@ fn assimilation_2(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 					}
 
 					// turn it light
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_light()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_light()
 					}
 				}
 
-				// if there is something after it check if it's a vocal
+				// if there is something after it check if it's a vowel
 				if position.padd(1) < ipa_structure.len() {
 					let mut position = position.padd(1);
 
@@ -156,8 +165,8 @@ fn assimilation_2(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 						position = position.padd(1);
 					}
 
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_light()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_light()
 					}
 				}
 			}
@@ -165,14 +174,14 @@ fn assimilation_2(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Third assimilation: turn all vocals after shading consonants to shading vocals.
+/// Third assimilation: turn all vowels after shading consonants to shading vowels.
 fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
 		if let IpaLetter::Radical(letter, _) = letter_ipa {
 			// check if its shading
 			if letter.is_shading() {
-				// if there is something after it check if it's a vocal
+				// if there is something after it check if it's a vowel
 				if position.padd(1) < ipa_structure.len() {
 					let mut position = position.padd(1);
 
@@ -181,8 +190,8 @@ fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 						position = position.padd(1);
 					}
 
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_shading()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_shading()
 					}
 				}
 			}
@@ -190,14 +199,14 @@ fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Fourth assimilation: turn all vocals after rounding consonants to rounding vocals.
+/// Fourth assimilation: turn all vowels after rounding consonants to rounding vowels.
 fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
 		if let IpaLetter::Radical(letter, _) = letter_ipa {
 			// check if its rounding
 			if letter.is_rounding() {
-				// if there is something after it check if it's a vocal
+				// if there is something after it check if it's a vowel
 				if position.padd(1) < ipa_structure.len() {
 					let mut position = position.padd(1);
 
@@ -206,8 +215,8 @@ fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 						position = position.padd(1);
 					}
 
-					if let IpaLetter::Vocal(vocal) = &mut ipa_structure[position] {
-						vocal.as_rounding()
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_rounding()
 					}
 				}
 			}
@@ -312,7 +321,7 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 
 				let mut nasal_found = None;
 
-				// if the last letter before the nasal is a vocal, remove it
+				// if the last letter before the nasal is a vowel, remove it
 				for (letter_ipa, letter_structure) in ipa_structure.iter_mut().zip(structure).rev() {
 					// if we find the nasal, save that we found it
 					if let Letter::Nasal(..) = letter_structure {
@@ -321,11 +330,11 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 					}
 
 					match letter_ipa {
-						// if we found a vocal
-						IpaLetter::Vocal(..) => {
+						// if we found a vowel
+						IpaLetter::Vowel(..) => {
 							// check if we already found the nasal
 							if let Some(nasal_found) = nasal_found {
-								// assign found vocal to nasal
+								// assign found vowel to nasal
 								*nasal_found = *letter_ipa;
 								*letter_ipa = IpaLetter::Removed;
 								break;
@@ -346,13 +355,13 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 	}
 }
 
-/// Seventh assimilation: turn vocals that should be nasal to nasal.
+/// Seventh assimilation: turn vowels that should be nasal to nasal.
 fn assimilation_7(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (letter_structure, letter_ipa) in structure.iter().zip(ipa_structure) {
 		// check if this is a nasal
 		if let Letter::Nasal(..) = letter_structure {
-			if let IpaLetter::Vocal(vocal) = letter_ipa {
-				vocal.as_nasal();
+			if let IpaLetter::Vowel(vowel) = letter_ipa {
+				vowel.as_nasal();
 			} else {
 				unreachable!("ipa and letter structure don't match");
 			}
@@ -417,18 +426,18 @@ const fn accent_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 }
 
 /// List how forms are configured.
-fn form_configs(length: Length, form_index: u8) -> Vocals {
-	use IpaVocal::*;
+fn form_configs(length: Length, form_index: u8) -> Vowels {
+	use IpaVowel::*;
 
 	let mut configs = ArrayVec::<[_; 4]>::new();
 
 	match length {
-		Length::L2 => configs.try_extend_from_slice(&[Vocals(NeutralA, NeutralA), Vocals(NeutralI, NeutralI)]),
+		Length::L2 => configs.try_extend_from_slice(&[Vowels(NeutralA, NeutralA), Vowels(NeutralI, NeutralI)]),
 		Length::L3 | Length::L4 => configs.try_extend_from_slice(&[
-			Vocals(NeutralA, NeutralE),
-			Vocals(NeutralE, NeutralI),
-			Vocals(NeutralU, NeutralA),
-			Vocals(NeutralU, NeutralI),
+			Vowels(NeutralA, NeutralE),
+			Vowels(NeutralE, NeutralI),
+			Vowels(NeutralU, NeutralA),
+			Vowels(NeutralU, NeutralI),
 		]),
 	}
 	.expect("failed to fill form configs");
@@ -588,17 +597,17 @@ enum Quality4 {
 	End,
 }
 
-/// Stores vocals.
-/// Purely there to make it easier to extract vocals with [`Vocal`].
+/// Stores vowels.
+/// Purely there to make it easier to extract vowels with [`Vowel`].
 #[derive(Clone, Copy, Debug)]
-struct Vocals(IpaVocal, IpaVocal);
+struct Vowels(IpaVowel, IpaVowel);
 
-impl Vocals {
-	/// Gets the right vocal with [`Vocal`].
-	fn get(self, vocal: Vocal) -> IpaVocal {
-		return match vocal {
-			Vocal::First => self.0,
-			Vocal::Last => self.1,
+impl Vowels {
+	/// Gets the right vowel with [`Vowel`].
+	fn get(self, vowel: Vowel) -> IpaVowel {
+		return match vowel {
+			Vowel::First => self.0,
+			Vowel::Last => self.1,
 		};
 	}
 }
@@ -608,17 +617,17 @@ impl Vocals {
 enum IpaLetter {
 	/// Radical.
 	Radical(IpaRadical, bool),
-	/// Vocal.
-	Vocal(IpaVocal),
+	/// Vowel.
+	Vowel(IpaVowel),
 	/// Duplicate.
 	Duplicate,
 	/// Removed letter.
 	Removed,
 }
 
-/// Represents vocals.
+/// Represents vowels.
 #[derive(Clone, Copy, Debug)]
-enum IpaVocal {
+enum IpaVowel {
 	/// Neutral `a`.
 	NeutralA,
 	/// Neutral `e`.
@@ -655,7 +664,7 @@ enum IpaVocal {
 	RoundingI,
 }
 
-impl IpaVocal {
+impl IpaVowel {
 	/// Get in `str` form.
 	fn as_str(self) -> &'static str {
 		return match self {
@@ -675,7 +684,7 @@ impl IpaVocal {
 		};
 	}
 
-	/// Turn vocal dark.
+	/// Turn vowel dark.
 	fn as_dark(&mut self) {
 		match self {
 			Self::NeutralE => *self = Self::DarkA,
@@ -684,7 +693,7 @@ impl IpaVocal {
 		}
 	}
 
-	/// Turn vocal light.
+	/// Turn vowel light.
 	fn as_light(&mut self) {
 		match self {
 			Self::NeutralA | Self::DarkA => *self = Self::LightE,
@@ -693,7 +702,7 @@ impl IpaVocal {
 		}
 	}
 
-	/// Turn vocal nasal.
+	/// Turn vowel nasal.
 	fn as_nasal(&mut self) {
 		match self {
 			Self::NeutralA | Self::DarkA => *self = Self::NasalA,
@@ -704,7 +713,7 @@ impl IpaVocal {
 		}
 	}
 
-	/// Turn vocal shading.
+	/// Turn vowel shading.
 	fn as_shading(&mut self) {
 		match self {
 			Self::LightE => *self = Self::ShadingE,
@@ -713,7 +722,7 @@ impl IpaVocal {
 		}
 	}
 
-	/// Turn vocal rounding.
+	/// Turn vowel rounding.
 	fn as_rounding(&mut self) {
 		match self {
 			Self::NeutralA | Self::DarkA => *self = Self::RoundingA,

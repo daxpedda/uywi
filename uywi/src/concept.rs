@@ -95,7 +95,7 @@ impl Concept {
 	/// # Errors
 	/// Returns [`Error`] on failing to build [`Concept`] from [`String`].
 	pub fn from_str(string: &str, accent: Accent) -> Result<Self> {
-		return accent.build_concept(string);
+		return accent.from_concept(string);
 	}
 
 	/// Get radicals.
@@ -153,7 +153,7 @@ impl Concept {
 	/// Get concept as [`String`].
 	#[must_use]
 	pub fn to_string(self, accent: Accent) -> String {
-		return accent.build_concept_string(self).to_string();
+		return accent.concept(self).to_string();
 	}
 
 	/// Get length.

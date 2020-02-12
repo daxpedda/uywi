@@ -43,7 +43,7 @@ impl Iterator for Words {
 }
 
 /// A word.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Word {
 	/// [`Concept`] to build from.
 	concept: Concept,
@@ -75,6 +75,21 @@ impl Word {
 	/// Get word as [`String`].
 	#[must_use]
 	pub fn to_string(self, accent: Accent) -> String {
-		return accent.build_word(self.concept, self.stem_index, self.form_index).to_string();
+		return accent.word(self).to_string();
+	}
+
+	/// Get [`Concept`].
+	pub const fn concept(self) -> Concept {
+		return self.concept;
+	}
+
+	/// Get stem index.
+	pub const fn stem_index(self) -> u8 {
+		return self.stem_index;
+	}
+
+	/// Get form index.
+	pub const fn form_index(self) -> u8 {
+		return self.form_index;
 	}
 }

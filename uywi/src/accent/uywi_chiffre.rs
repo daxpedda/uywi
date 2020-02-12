@@ -5,6 +5,7 @@ use crate::*;
 use array_init::array_init;
 use arrayvec::{ArrayString, ArrayVec};
 use std::mem;
+use unicode_segmentation::UnicodeSegmentation;
 
 /// Accent instantiation. Used to return from enum without [`Box`].
 pub(super) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
@@ -14,7 +15,11 @@ pub(super) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
 pub(super) struct UywiChiffre {}
 
 impl AccentExt for UywiChiffre {
-	fn build_concept(&self, string: &str) -> Result<Concept> {
+	fn accent(&self) -> Accent {
+		return Accent::UywiChiffre;
+	}
+
+	fn from_concept(&self, string: &str) -> Result<Concept> {
 		let length = Length::new(string.grapheme_len())?;
 
 		// store already used radicals
@@ -67,7 +72,37 @@ impl AccentExt for UywiChiffre {
 		return Ok(Concept::new(radicals, length));
 	}
 
-	fn build_concept_string(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
+	fn from_string(&self, string: &str) -> Result<ConceptOrWord> {
+		let mut concept = ArrayString::<[u8; WORD_BUFFER]>::new();
+		let mut vowels = ArrayString::<[u8; WORD_BUFFER]>::new();
+
+		for letter in string.graphemes(true) {
+			if if accent_vowels().contains(&letter) { &mut vowels } else { &mut concept }
+				.try_push_str(letter)
+				.is_err()
+			{
+				return Err(Error::WordLengthInvalid);
+			}
+		}
+
+		let concept = self.from_concept(&concept)?;
+
+		if vowels.is_empty() {
+			return Ok(ConceptOrWord::Concept(concept));
+		} else {
+			for stem in concept {
+				for word in stem {
+					if string == word.to_string(self.accent()) {
+						return Ok(ConceptOrWord::Word(word));
+					}
+				}
+			}
+
+			return Err(Error::WordInvalid);
+		}
+	}
+
+	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
@@ -77,13 +112,14 @@ impl AccentExt for UywiChiffre {
 		return string;
 	}
 
-	fn build_word(&self, concept: Concept, stem_index: u8, form_index: u8) -> ArrayString<[u8; WORD_BUFFER]> {
+	fn word(&self, word: Word) -> ArrayString<[u8; WORD_BUFFER]> {
+		let concept = word.concept();
 		// get concept radicals
 		let concept_radicals = concept.radicals();
 		// get correct form config
-		let vocals = form_configs(concept.length(), form_index);
+		let vowels = form_configs(concept.length(), word.form_index());
 		// get correct structure
-		let structure = structure::structures(concept.length(), stem_index);
+		let structure = structure::structures(concept.length(), word.stem_index());
 
 		let mut string = ArrayString::new();
 
@@ -96,7 +132,7 @@ impl AccentExt for UywiChiffre {
 
 					string.push_str(accent_radicals()[radical_index])
 				},
-				Letter::Vocal(vocal) | Letter::DuplicateVocal(vocal) | Letter::Nasal(vocal) => string.push_str(vocals.get(vocal)),
+				Letter::Vowel(vowel) | Letter::DuplicateVowel(vowel) | Letter::Nasal(vowel) => string.push_str(vowels.get(vowel)),
 			};
 		}
 
@@ -112,30 +148,36 @@ const fn accent_radicals() -> [&'static str; NUM_OF_RADICALS] {
 	];
 }
 
+/// Get vowels for this accent.
+const fn accent_vowels() -> [&'static str; 2] {
+	return ["o", "ı"];
+}
+
 /// List how forms are configured.
-fn form_configs(length: Length, form_index: u8) -> Vocals {
+fn form_configs(length: Length, form_index: u8) -> Vowels {
 	let mut configs = ArrayVec::<[_; 4]>::new();
+	let [o, i] = accent_vowels();
 
 	match length {
-		Length::L2 => configs.try_extend_from_slice(&[Vocals("o", "o"), Vocals("ı", "ı")]),
-		Length::L3 | Length::L4 => configs.try_extend_from_slice(&[Vocals("o", "o"), Vocals("o", "ı"), Vocals("ı", "o"), Vocals("ı", "ı")]),
+		Length::L2 => configs.try_extend_from_slice(&[Vowels(o, o), Vowels(i, i)]),
+		Length::L3 | Length::L4 => configs.try_extend_from_slice(&[Vowels(o, o), Vowels(o, i), Vowels(i, o), Vowels(i, i)]),
 	}
 	.expect("failed to fill form configs");
 
 	return configs[usize::from(form_index)];
 }
 
-/// Stores vocals.
-/// Purely there to make it easier to extract vocals with [`Vocal`].
+/// Stores vowels.
+/// Purely there to make it easier to extract vowels with [`Vowel`].
 #[derive(Clone, Copy, Debug)]
-struct Vocals(&'static str, &'static str);
+struct Vowels(&'static str, &'static str);
 
-impl Vocals {
-	/// Gets the right vocal with [`Vocal`].
-	fn get(&self, vocal: Vocal) -> &'static str {
-		return match vocal {
-			Vocal::First => self.0,
-			Vocal::Last => self.1,
+impl Vowels {
+	/// Gets the right vowel with [`Vowel`].
+	fn get(&self, vowel: Vowel) -> &'static str {
+		return match vowel {
+			Vowel::First => self.0,
+			Vowel::Last => self.1,
 		};
 	}
 }

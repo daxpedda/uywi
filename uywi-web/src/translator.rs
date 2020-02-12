@@ -6,7 +6,7 @@ use crate::{
 	Event as SuperEvent, State as SuperState,
 };
 use seed::prelude::{AsAtValue, At, El, Ev, IndexMap, Node, Orders, UpdateEl};
-use uywi::{Accent, Concept};
+use uywi::Accent;
 use web_sys::{FormData, HtmlFormElement, HtmlTextAreaElement};
 
 /// State of the translator.
@@ -73,7 +73,7 @@ impl State {
 				let mut output = String::new();
 
 				for word in data.pget("input").split_whitespace() {
-					match Concept::from_str(word, Accent::UywiChiffre) {
+					match Accent::UywiChiffre.from_string(word) {
 						Ok(word) => output.push_str(&word.to_string(Accent::IpaPeter)),
 						Err(_) => output.push_str(word),
 					}

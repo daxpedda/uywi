@@ -32,7 +32,7 @@ pub(crate) use accent::{AccentExt, NUM_OF_RADICALS};
 pub(crate) use concept::Radical;
 pub(crate) use row::{Row, Rows};
 pub(crate) use stem::{Stem, Stems};
-pub(crate) use structure::{Letter, Vocal};
+pub(crate) use structure::{Letter, Vowel};
 pub(crate) use util::*;
 pub(crate) use word::{Word, Words};
 
@@ -71,4 +71,10 @@ pub enum Error {
 	/// Error when string to build a [`Concept`] had invalid letters.
 	#[error("Concept contains invalid letters.")]
 	ConceptRadicalInvalid,
+	/// Error when string to build a [`Word`] was invalid.
+	#[error("Word invalid")]
+	WordInvalid,
+	/// Error when string to build a [`Word`] was bigger then buffer.
+	#[error("Word length is invalid")]
+	WordLengthInvalid,
 }

@@ -3,19 +3,19 @@
 use crate::*;
 use arrayvec::ArrayVec;
 
-/// Represents a consonant or a vocal in a structure.
+/// Represents a consonant or a vowel in a structure.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Letter {
 	/// Represents a consonant position.
 	Consonant(u8),
-	/// Represents a vocal.
-	Vocal(Vocal),
+	/// Represents a vowel.
+	Vowel(Vowel),
 	/// Represents a duplicate consonant.
 	DuplicateConsonant(u8),
-	/// Represents a duplicate vocal.
-	DuplicateVocal(Vocal),
-	/// Represents a nasal vocal.
-	Nasal(Vocal),
+	/// Represents a duplicate vowel.
+	DuplicateVowel(Vowel),
+	/// Represents a nasal vowel.
+	Nasal(Vowel),
 }
 
 impl Letter {
@@ -26,12 +26,12 @@ impl Letter {
 		return Self::Consonant(index);
 	}
 
-	/// Build new [`Letter::Vocal`].
-	pub(crate) fn new_vocal(index: usize) -> Self {
-		return Self::Vocal(match index {
-			0 => Vocal::First,
-			1 => Vocal::Last,
-			_ => unreachable!("vocal index is invalid"),
+	/// Build new [`Letter::Vowel`].
+	pub(crate) fn new_vowel(index: usize) -> Self {
+		return Self::Vowel(match index {
+			0 => Vowel::First,
+			1 => Vowel::Last,
+			_ => unreachable!("vowel index is invalid"),
 		});
 	}
 
@@ -42,31 +42,31 @@ impl Letter {
 		return Self::DuplicateConsonant(index);
 	}
 
-	/// Build new [`Letter::DuplicateVocal`].
-	pub(crate) fn new_duplicate_vocal(index: usize) -> Self {
-		return Self::DuplicateVocal(match index {
-			0 => Vocal::First,
-			1 => Vocal::Last,
-			_ => unreachable!("vocal index is invalid"),
+	/// Build new [`Letter::DuplicateVowel`].
+	pub(crate) fn new_duplicate_vowel(index: usize) -> Self {
+		return Self::DuplicateVowel(match index {
+			0 => Vowel::First,
+			1 => Vowel::Last,
+			_ => unreachable!("vowel index is invalid"),
 		});
 	}
 
 	/// Build new [`Letter::Nasal`].
 	pub(crate) fn new_nasal(index: usize) -> Self {
 		return Self::Nasal(match index {
-			0 => Vocal::First,
-			1 => Vocal::Last,
-			_ => unreachable!("vocal index is invalid"),
+			0 => Vowel::First,
+			1 => Vowel::Last,
+			_ => unreachable!("vowel index is invalid"),
 		});
 	}
 }
 
-/// Represents a vocal.
+/// Represents a vowel.
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Vocal {
-	/// Represents the first vocal.
+pub(crate) enum Vowel {
+	/// Represents the first vowel.
 	First,
-	/// Represents the second vocal.
+	/// Represents the second vowel.
 	Last,
 }
 
@@ -122,8 +122,8 @@ pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 8]
 					match r#type {
 						// consonant
 						"c" => config.push(Letter::new_consonant(length, index)),
-						// vocal
-						"v" => config.push(Letter::new_vocal(usize::from(index))),
+						// vowel
+						"v" => config.push(Letter::new_vowel(usize::from(index))),
 						_ => unreachable!("configuration type not valid"),
 					}
 				},
@@ -134,8 +134,8 @@ pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 8]
 					match r#type {
 						// consonant
 						"c" => config.push(Letter::new_duplicate_consonant(length, index)),
-						// vocal
-						"v" => config.push(Letter::new_duplicate_vocal(usize::from(index))),
+						// vowel
+						"v" => config.push(Letter::new_duplicate_vowel(usize::from(index))),
 						// nasal
 						"n" => config.push(Letter::new_nasal(usize::from(index))),
 						_ => unreachable!("configuration type not valid"),
