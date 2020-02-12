@@ -280,6 +280,9 @@ impl State {
 			},
 			// handle concept string input
 			Event::ConceptInput(input, value) => {
+				// we don't want to rerender anything on input
+				orders.skip();
+
 				// reset checks, because `check_validity` will trigger the last error
 				input.set_custom_validity("");
 
@@ -288,12 +291,7 @@ impl State {
 					// we want to display custom error messages if concept wasn't generated
 					if let Err(error) = Concept::from_str(&value, Accent::UywiChiffre) {
 						input.set_custom_validity(&error.to_string());
-						// if there is an error skip rendering
-						orders.skip();
 					}
-				// skip if html chehcks didnt pass
-				} else {
-					orders.skip();
 				}
 			},
 			// handle clicking on a link to forms
