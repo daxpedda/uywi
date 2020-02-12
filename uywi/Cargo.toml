@@ -6,12 +6,12 @@ edition = "2018"
 description = "UYWI word generator frontend."
 
 [dependencies]
-array-init = "0.1.1"
-arrayvec = "0.5.1"
-log = "0.4.8"
-num = "0.2.0"
-thiserror = "1.0.5"
-unicode-segmentation = "1.6.0"
+array-init = "0.1"
+arrayvec = "0.5"
+log = "0.4"
+num = "0.2"
+thiserror = "1"
+unicode-segmentation = "1"
 
 [dev-dependencies]
-rayon = "1.2.0"
+rayon = "1"

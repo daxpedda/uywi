@@ -252,14 +252,13 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 		let position = structure
 			.iter()
 			.enumerate()
-			.filter_map(|(position, letter)| {
+			.find_map(|(position, letter)| {
 				if let Letter::Consonant(..) = letter {
 					return Some(position);
 				} else {
 					return None;
 				}
 			})
-			.nth(0)
 			.expect("no consonant found");
 
 		let letter = &mut ipa_structure[position];

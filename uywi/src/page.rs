@@ -49,6 +49,8 @@ pub struct Page {
 
 impl Page {
 	/// Build [`Page`] from page index.
+	/// # Errors
+	/// [`Error::PageIndexInvalid`] if `index` is higher then the number of pages of the given [`Length`]
 	pub fn from_index(index: usize, length: Length) -> Result<Self> {
 		if index >= length.num_of_pages() {
 			return Err(Error::PageIndexInvalid);
@@ -58,6 +60,12 @@ impl Page {
 	}
 
 	/// Build [`Page`] from page string.
+	/// # Errors
+	/// [`Error::PageStringInvalid`] if `index` can not be parsed into `usize`
+	///
+	/// [`Error::PageStringNull`] if `index` is 0
+	///
+	/// [`Error::PageIndexInvalid`] if `index` is higher then the number of pages of the given [`Length`]
 	pub fn from_str(index: &str, length: Length) -> Result<Self> {
 		let index: usize = if let Ok(index) = index.parse() {
 			index
@@ -66,7 +74,7 @@ impl Page {
 		};
 
 		// in index form a page is always `- 1` to the string
-		return Self::from_index(index.psub(1), length);
+		return Self::from_index(index.checked_sub(1).ok_or(Error::PageStringNull)?, length);
 	}
 
 	/// Get index.

@@ -6,20 +6,22 @@ edition = "2018"
 description = "UYWI word generator frontend."
 
 [dependencies]
-log = { version = "0.4.8", features = ["release_max_level_off"] }
-seed = "0.4.2"
+log = { version = "0.4", features = ["release_max_level_off"] }
+seed = "0.6"
+unicode-segmentation = "1"
 uywi = { path = "../uywi"}
-wasm-bindgen = "0.2.54"
-wasm-logger = "0.2.0"
-wee_alloc = "0.4.5"
+wasm-bindgen = "0.2"
+wasm-logger = "0.2"
+wee_alloc = "0.4"
 
 [dependencies.web-sys]
-version = "0.3.31"
+version = "0.3"
 features = [
 	"FormData",
 	"HtmlFormElement",
 	"HtmlInputElement",
+	"HtmlTextAreaElement",
 ]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.4"
+wasm-bindgen-test = "0.3"

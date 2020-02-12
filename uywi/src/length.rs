@@ -18,6 +18,8 @@ pub enum Length {
 #[allow(clippy::unused_self)]
 impl Length {
 	/// Build new [`Length`].
+	/// # Errors
+	/// [`Error::LengthInvalid`] if `length` has no corresponding [`Length`]
 	pub fn new(length: usize) -> Result<Self> {
 		match length {
 			2 => return Ok(Self::L2),

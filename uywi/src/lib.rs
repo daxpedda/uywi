@@ -53,12 +53,18 @@ pub enum Error {
 	/// Error when string to build a [`Page`] was invalid.
 	#[error("String of page is invalid.")]
 	PageStringInvalid,
+	/// Error when string to build a [`Page`] was 0.
+	#[error("String of page is 0.")]
+	PageStringNull,
 	/// Error when index to build a [`Concept`] was invalid.
 	#[error("Index of concept is invalid.")]
 	ConceptIndexInvalid,
 	/// Error when string to build a [`Concept`] was invalid.
-	#[error("String of page is invalid.")]
+	#[error("String of concept is invalid.")]
 	ConceptStringInvalid,
+	/// Error when string to build a [`Concept`] was 0.
+	#[error("String of concept is 0.")]
+	ConceptStringNull,
 	/// Error when string to build a [`Concept`] had duplicate letters.
 	#[error("Duplicate letters in a concept are invalid.")]
 	ConceptRadicalDuplicate,

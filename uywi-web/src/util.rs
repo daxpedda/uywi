@@ -1,8 +1,8 @@
 //! Utility functions.
 
 use seed::{
-	events::Listener,
 	prelude::{Ev, Node},
+	EventHandler,
 };
 #[cfg(debug_assertions)]
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -64,10 +64,10 @@ impl<T> ReserveChildren for Node<T> {
 
 /// Create an event that accepts a closure and passes a `web_sys::FormData`.
 /// Optionally use `web_sys::Event::prevent_default`.
-pub fn submit_ev<T>(handler: impl FnOnce(HtmlFormElement, FormData) -> T + 'static + Clone) -> Listener<T> {
-	use seed::prelude::raw_ev;
+pub fn submit_ev<EF: Into<EI>, EI>(handler: impl FnOnce(HtmlFormElement, FormData) -> EF + 'static + Clone) -> EventHandler<EI> {
+	use seed::prelude::ev;
 
-	return raw_ev(Ev::Submit, move |event| {
+	return ev(Ev::Submit, move |event| {
 		event.prevent_default();
 
 		let form = event
@@ -86,15 +86,16 @@ pub fn submit_ev<T>(handler: impl FnOnce(HtmlFormElement, FormData) -> T + 'stat
 					.expect("target is not a `HtmlFormElement`"),
 			)
 			.expect("`FormData` couldn't be made from `HtmlFormElement`"),
-		);
+		)
+		.into();
 	});
 }
 
 /// Create an event that accepts a closure and passes a `web_sys::HtmlInputElement` with it's value as `String`.
-pub fn input_ev<T>(handler: impl FnOnce(HtmlInputElement, String) -> T + 'static + Clone) -> Listener<T> {
-	use seed::prelude::raw_ev;
+pub fn input_ev<EF: Into<EI>, EI>(handler: impl FnOnce(HtmlInputElement, String) -> EF + 'static + Clone) -> EventHandler<EI> {
+	use seed::prelude::ev;
 
-	return raw_ev(Ev::Input, move |event| {
+	return ev(Ev::Input, move |event| {
 		let input = event
 			.target()
 			.expect("event doesn't have a target")
@@ -103,19 +104,19 @@ pub fn input_ev<T>(handler: impl FnOnce(HtmlInputElement, String) -> T + 'static
 
 		let value = input.value();
 
-		return handler(input, value);
+		return handler(input, value).into();
 	});
 }
 
 /// Create an event that accepts a closure and passes `value`.
 /// Optionally use `web_sys::Event::prevent_default`.
-pub fn click_ev<T: Clone + 'static, E>(value: T, handler: impl FnOnce(T) -> E + 'static + Clone) -> Listener<E> {
-	use seed::prelude::raw_ev;
+pub fn click_ev<T: Clone + 'static, EF: Into<EI>, EI>(value: T, handler: impl FnOnce(T) -> EF + 'static + Clone) -> EventHandler<EI> {
+	use seed::prelude::ev;
 
-	return raw_ev(Ev::Click, move |event| {
+	return ev(Ev::Click, move |event| {
 		event.prevent_default();
 
-		return handler(value);
+		return handler(value).into();
 	});
 }
 

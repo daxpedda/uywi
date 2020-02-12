@@ -6,7 +6,6 @@ skip_core_tasks = true
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 CARGO_MAKE_RUN_PATH = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
-CARGO_MAKE_HOST_TRIPLE = "${CARGO_MAKE_RUST_TARGET_ARCH}-${CARGO_MAKE_RUST_TARGET_VENDOR}-${CARGO_MAKE_RUST_TARGET_OS}-${CARGO_MAKE_RUST_TARGET_ENV}"
 
 ### GENERAL TASKS ###
 
@@ -31,16 +30,17 @@ script = [
 [tasks.web-build-dev]
 private = true
 command = "cargo"
-args = ["build", "-Z", "config-profile"]
+args = ["build", "--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}", "-Z", "config-profile"]
 
 [tasks.web-build-release]
 private = true
 command = "cargo"
 args = [
 	"build",
+	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
 	"--profile", "release-web",
 	"-Z", "config-profile",
-	"-Z", "build-std",
+	"-Z", "build-std=std,panic_abort",
 	"-Z", "unstable-options",
 ]
 
@@ -81,9 +81,9 @@ args = ["-Os", "-o", "${CARGO_MAKE_WEB_PATH}/${CARGO_MAKE_CRATE_NAME}_bg.wasm", 
 [tasks.build-internal]
 private = true
 run_task = [
-	{ name = "build-dev-web", condition = { profiles = ["development"], env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "build-dev-web", condition = { profiles = ["development"], env = { CARGO_MAKE_CRATE_TARGET_TRIPLE = "wasm32-unknown-unknown" } } },
 	{ name = "build-dev", condition = { profiles = ["development"] } },
-	{ name = "build-release-web", condition = { profiles = ["release"], env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "build-release-web", condition = { profiles = ["release"], env = { CARGO_MAKE_CRATE_TARGET_TRIPLE = "wasm32-unknown-unknown" } } },
 	{ name = "build-release", condition = { profiles = ["release"] } },
 ]
 
@@ -92,7 +92,7 @@ private = true
 command = "cargo"
 args = [
 	"build",
-	"--target", "${CARGO_MAKE_HOST_TRIPLE}",
+	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
 	"-Z", "config-profile",
 ]
 
@@ -106,7 +106,7 @@ command = "cargo"
 args = [
 	"build",
 	"--release",
-	"--target", "${CARGO_MAKE_HOST_TRIPLE}",
+	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
 	"-Z", "config-profile",
 	"-Z", "build-std",
 ]
@@ -133,7 +133,7 @@ script = [
 private = true
 dependencies = ["run-build"]
 run_task = [
-	{ name = "run-web", condition = { env_true = ["CARGO_MAKE_WEB"] } },
+	{ name = "run-web", condition = { env = { CARGO_MAKE_CRATE_TARGET_TRIPLE = "wasm32-unknown-unknown" } } },
 	{ name = "run-dev", condition = { profiles = ["development"] } },
 	{ name = "run-release", condition = { profiles = ["release"] } },
 ]
@@ -157,12 +157,12 @@ script = ["cmd /c start \"\" \"http://localhost:8000\""]
 [tasks.run-dev]
 private = true
 cwd = "${CARGO_MAKE_RUN_PATH}"
-command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_HOST_TRIPLE}/debug/${CARGO_MAKE_CRATE_NAME}"
+command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_CRATE_TARGET_TRIPLE}/debug/${CARGO_MAKE_CRATE_NAME}"
 
 [tasks.run-release]
 private = true
 cwd = "${CARGO_MAKE_RUN_PATH}"
-command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_HOST_TRIPLE}/release/${CARGO_MAKE_CRATE_NAME}"
+command = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/${CARGO_MAKE_CRATE_TARGET_TRIPLE}/release/${CARGO_MAKE_CRATE_NAME}"
 
 ### CHECK ###
 

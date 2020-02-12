@@ -21,6 +21,8 @@ impl Concept {
 	}
 
 	/// Build [`Concept`] from concept index.
+	/// # Errors
+	/// [`Error::ConceptIndexInvalid`] if `index` is higher then the number of pages of the given [`Length`]
 	pub fn from_index(index: usize, length: Length) -> Result<Self> {
 		// check for valid concept index
 		if index >= length.num_of_concepts() {
@@ -72,6 +74,12 @@ impl Concept {
 	}
 
 	/// Build [`Concept`] from index string.
+	/// # Errors
+	/// [`Error::ConceptStringInvalid`] if `index` can not be parsed into `usize`
+	///
+	/// [`Error::ConceptStringNull`] if `index` is 0
+	///
+	/// [`Error::ConceptStringInvalid`] if `index` is higher then the number of pages of the given [`Length`]
 	pub fn from_index_str(index: &str, length: Length) -> Result<Self> {
 		let index: usize = if let Ok(index) = index.parse() {
 			index
@@ -80,10 +88,12 @@ impl Concept {
 		};
 
 		// in index form a concept is always `- 1` to the string
-		return Self::from_index(index.psub(1), length);
+		return Self::from_index(index.checked_sub(1).ok_or(Error::ConceptStringNull)?, length);
 	}
 
 	/// Build [`Concept`] from string.
+	/// # Errors
+	/// Returns [`Error`] on failing to build [`Concept`] from [`String`].
 	pub fn from_str(string: &str, accent: Accent) -> Result<Self> {
 		return accent.build_concept(string);
 	}
