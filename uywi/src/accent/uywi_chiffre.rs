@@ -74,27 +74,32 @@ impl AccentExt for UywiChiffre {
 
 	fn from_string(&self, string: &str) -> Result<ConceptOrWord> {
 		let mut concept = ArrayString::<[u8; WORD_BUFFER]>::new();
-		let mut vowels = ArrayString::<[u8; WORD_BUFFER]>::new();
 
-		for letter in string.graphemes(true) {
-			if if accent_vowels().contains(&letter) { &mut vowels } else { &mut concept }
-				.try_push_str(letter)
-				.is_err()
-			{
-				return Err(Error::WordLengthInvalid);
-			}
-		}
-
-		let concept = self.from_concept(&concept)?;
-
-		if vowels.is_empty() {
+		if let Ok(concept) = self.from_concept(string) {
 			return Ok(ConceptOrWord::Concept(concept));
 		} else {
-			for stem in concept {
-				for word in stem {
-					if string == word.to_string(self.accent()) {
-						return Ok(ConceptOrWord::Word(word));
+			for length in &[Length::L2, Length::L3, Length::L4] {
+				for stem_index in 0..length.stems_per_concept() {
+					let stem_index = stem_index.pinto();
+					let structure = structure::structures(*length, stem_index);
+
+					if structure.len() == string.grapheme_len() {
+						for (letter_structure, letter_concept) in structure.iter().zip(string.graphemes(true)) {
+							if let Letter::Consonant(_) = letter_structure {
+								concept.try_push_str(letter_concept).map_err(|_| return Error::WordLengthInvalid)?
+							}
+						}
+
+						if let Ok(concept) = self.from_concept(&concept) {
+							for word in Words::new(concept, stem_index) {
+								if string == word.to_string(self.accent()) {
+									return Ok(ConceptOrWord::Word(word));
+								}
+							}
+						}
 					}
+
+					concept.clear();
 				}
 			}
 
