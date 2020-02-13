@@ -60,22 +60,28 @@ impl State {
 				let mut output = String::new();
 				let mut word = String::new();
 
-				for char in data.pget("input").chars() {
-					if char.is_whitespace() {
-						if !word.is_empty() {
-							match Script::UywiChiffre.from_str(&word) {
-								Ok(word) => output.push_str(&word.to_string(Script::IpaPeter)),
-								Err(_) => output.push_str(&word),
-							}
-
-							word.clear();
+				let handle_word = |output: &mut String, word: &mut String| {
+					if !word.is_empty() {
+						if let Ok(word) = Script::UywiChiffre.from_str(word) {
+							output.push_str(&word.to_string(Script::IpaPeter));
+						} else {
+							output.push_str(word);
 						}
 
+						word.clear();
+					}
+				};
+
+				for char in data.pget("input").chars() {
+					if char.is_whitespace() {
+						handle_word(&mut output, &mut word);
 						output.push(char);
 					} else {
 						word.push(char);
 					}
 				}
+
+				handle_word(&mut output, &mut word);
 
 				form.pget::<HtmlTextAreaElement>("output").set_value(&output);
 			},
