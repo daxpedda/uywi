@@ -199,7 +199,7 @@ fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Fifth assimilation: turn all consonants around voiceless consonants that are [`Alternative`](Quality3::Alternative) to their alternative form.
+/// Fourth assimilation: turn all consonants around voiceless consonants that are [`Alternative`](Quality3::Alternative) to their alternative form.
 fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
@@ -229,7 +229,7 @@ fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Sixth assimilation: if the consonant should be removed at the beginning or end, remove it.
+/// Fifth assimilation: if the consonant should be removed at the beginning or end, remove it.
 fn assimilation_5(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	{
 		// filter only for radicals and get the first one
@@ -330,7 +330,7 @@ fn assimilation_5(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 	}
 }
 
-/// Seventh assimilation: turn vowels that should be nasal to nasal.
+/// Sixth assimilation: turn vowels that should be nasal to nasal.
 fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (letter_structure, letter_ipa) in structure.iter().zip(ipa_structure) {
 		// check if this is a nasal
@@ -344,7 +344,7 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 	}
 }
 
-/// Fourth assimilation: turn all vowels after rounding consonants to rounding vowels.
+/// Seventh assimilation: turn all vowels after rounding consonants to rounding vowels.
 fn assimilation_7(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
@@ -378,50 +378,50 @@ const fn script_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 
 	#[rustfmt::skip]
 	return [
-        IpaRadical("ʔ",  Neutral, false, None,           None,                   Some(Beginning)),
-        IpaRadical("j",  Dark,    false, None,           None,                   None),
-        IpaRadical("w",  Neutral, false, None,           None,                   None),
-        IpaRadical("h",  Neutral, false, None,           Some(Voiceless),        Some(End)),
-        IpaRadical("ʕ",  Neutral, false, None,           None,                   None),
-        IpaRadical("ħ",  Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("k",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-        IpaRadical("kʰ", Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("x",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-        IpaRadical("x",  Light,   false, None,           Some(Voiceless),        None),
-        IpaRadical("ʁ",  Neutral, false, None,           Some(Alternative("χ")), None),
-        IpaRadical("ɟ",  Neutral, false, None,           Some(Alternative("c")), None),
-        IpaRadical("g",  Dark,    false, Some(Shading),  None,                   None),
-        IpaRadical("g",  Light,   false, None,           None,                   None),
-        IpaRadical("ɥ",  Light,   false, Some(Rounding), None,                   None),
-        IpaRadical("d͡ʐ", Dark,    false, Some(Shading),  None,                   None),
-        IpaRadical("d͡ʒ", Neutral, false, None,           None,                   None),
-        IpaRadical("ʂ",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-        IpaRadical("ɕ",  Light,   false, None,           Some(Voiceless),        None),
-        IpaRadical("ʃ",  Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("s",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-        IpaRadical("s",  Light,   true,  None,           Some(Voiceless),        None),
-        IpaRadical("z",  Dark,    false, Some(Shading),  None,                   None),
-        IpaRadical("z",  Light,   true,  None,           None,                   None),
-        IpaRadical("d",  Dark,    false, Some(Shading),  None,                   None),
-        IpaRadical("d",  Light,   true,  None,           None,                   None),
-        IpaRadical("t",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-        IpaRadical("tʰ", Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("t͡ɕ", Light,   false, None,           Some(Voiceless),        None),
-        IpaRadical("t͡s", Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("θ",  Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("ð",  Neutral, false, None,           None,                   None),
-        IpaRadical("v",  Dark,    false, None,           None,                   None),
-        IpaRadical("f",  Neutral, false, None,           Some(Voiceless),        None),
-        IpaRadical("p",  Neutral, false, Some(Rounding), Some(Voiceless),        None),
-        IpaRadical("b",  Neutral, false, Some(Rounding), None,                   None),
-        IpaRadical("m",  Neutral, false, Some(Rounding), None,                   None),
-        IpaRadical("n",  Neutral, false, None,           None,                   None),
-        IpaRadical("ŋ",  Neutral, false, None,           None,                   None),
-        IpaRadical("ɻ",  Dark,    false, Some(Rounding), None,                   None),
-        IpaRadical("r",  Neutral, false, None,           None,                   None),
-        IpaRadical("l",  Light,   true,  None,           None,                   None),
-        IpaRadical("ʟ",  Dark,    false, Some(Shading),  None,                   None),
-        IpaRadical("l",  Neutral, false, None,           None,                   None),
+		IpaRadical("ʔ",  Neutral, false, None,           None,                   Some(Beginning)),
+		IpaRadical("j",  Dark,    false, None,           None,                   None),
+		IpaRadical("w",  Neutral, false, None,           None,                   None),
+		IpaRadical("h",  Neutral, false, None,           Some(Voiceless),        Some(End)),
+		IpaRadical("ʕ",  Neutral, false, None,           None,                   None),
+		IpaRadical("ħ",  Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("k",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+		IpaRadical("kʰ", Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("x",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+		IpaRadical("x",  Light,   false, None,           Some(Voiceless),        None),
+		IpaRadical("ʁ",  Neutral, false, None,           Some(Alternative("χ")), None),
+		IpaRadical("ɟ",  Neutral, false, None,           Some(Alternative("c")), None),
+		IpaRadical("g",  Dark,    false, Some(Shading),  None,                   None),
+		IpaRadical("g",  Light,   false, None,           None,                   None),
+		IpaRadical("ɥ",  Light,   false, Some(Rounding), None,                   None),
+		IpaRadical("d͡ʐ", Dark,    false, Some(Shading),  None,                   None),
+		IpaRadical("d͡ʒ", Neutral, false, None,           None,                   None),
+		IpaRadical("ʂ",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+		IpaRadical("ɕ",  Light,   false, None,           Some(Voiceless),        None),
+		IpaRadical("ʃ",  Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("s",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+		IpaRadical("s",  Light,   true,  None,           Some(Voiceless),        None),
+		IpaRadical("z",  Dark,    false, Some(Shading),  None,                   None),
+		IpaRadical("z",  Light,   true,  None,           None,                   None),
+		IpaRadical("d",  Dark,    false, Some(Shading),  None,                   None),
+		IpaRadical("d",  Light,   true,  None,           None,                   None),
+		IpaRadical("t",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
+		IpaRadical("tʰ", Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("t͡ɕ", Light,   false, None,           Some(Voiceless),        None),
+		IpaRadical("t͡s", Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("θ",  Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("ð",  Neutral, false, None,           None,                   None),
+		IpaRadical("v",  Dark,    false, None,           None,                   None),
+		IpaRadical("f",  Neutral, false, None,           Some(Voiceless),        None),
+		IpaRadical("p",  Neutral, false, Some(Rounding), Some(Voiceless),        None),
+		IpaRadical("b",  Neutral, false, Some(Rounding), None,                   None),
+		IpaRadical("m",  Neutral, false, Some(Rounding), None,                   None),
+		IpaRadical("n",  Neutral, false, None,           None,                   None),
+		IpaRadical("ŋ",  Neutral, false, None,           None,                   None),
+		IpaRadical("ɻ",  Dark,    false, None,			 None,                   None),
+		IpaRadical("r",  Neutral, false, None,           None,                   None),
+		IpaRadical("l",  Light,   true,  None,           None,                   None),
+		IpaRadical("ʟ",  Dark,    false, Some(Shading),  None,                   None),
+		IpaRadical("l",  Neutral, false, None,           None,                   None),
 	];
 }
 
@@ -728,6 +728,8 @@ impl IpaVowel {
 			Self::NeutralA | Self::DarkA => *self = Self::RoundingA,
 			Self::NeutralE | Self::LightE => *self = Self::RoundingE,
 			Self::NeutralI | Self::LightI => *self = Self::RoundingI,
+			Self::NasalA => *self = Self::NasalE,
+			Self::NasalI => *self = Self::NasalU,
 			_ => (),
 		}
 	}

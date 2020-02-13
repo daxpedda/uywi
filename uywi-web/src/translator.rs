@@ -67,14 +67,13 @@ impl State {
 						} else {
 							output.push_str(word);
 						}
-
-						word.clear();
 					}
 				};
 
 				for char in data.pget("input").chars() {
 					if char.is_whitespace() {
 						handle_word(&mut output, &mut word);
+						word.clear();
 						output.push(char);
 					} else {
 						word.push(char);
