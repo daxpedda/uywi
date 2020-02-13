@@ -39,6 +39,11 @@ select {
 a {
     text-decoration: none
 }
+textarea {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box
+}
 .highlighted {
     background-color: yellow
 }

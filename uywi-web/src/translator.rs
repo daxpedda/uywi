@@ -5,7 +5,7 @@ use crate::{
 	util::{self, *},
 	Event as SuperEvent, State as SuperState,
 };
-use seed::prelude::{AsAtValue, At, El, Ev, IndexMap, Node, Orders, UpdateEl};
+use seed::prelude::{AsAtValue, At, El, Ev, IndexMap, Node, Orders, St, UpdateEl};
 use uywi::Script;
 use web_sys::{FormData, HtmlFormElement, HtmlTextAreaElement};
 
@@ -17,50 +17,37 @@ impl State {
 	/// Drawing translator.
 	#[allow(clippy::unused_self)]
 	pub(crate) fn view(&self) -> Vec<Node<SuperEvent>> {
-		use seed::{attrs, button, class, div, form, prelude::ev, textarea};
+		use seed::{attrs, button, class, div, form, prelude::ev, style, textarea};
 
-		return vec![div![
+		return vec![form![
 			class!["center"],
-			form![
-				class!["table"],
-				util::submit_ev(Event::Translate),
-				div![
-					class!["tr"],
-					div![
-						class!["td"],
-						button![attrs![At::Type => "button"], ev(Ev::Click, |_| return Event::Home.into()), "Back to home"],
-					]
-				],
-				div![
-					class!["tr"],
-					div![
-						class!["td"],
-						textarea![attrs![
-							At::Name => "input",
-							At::Required => true.as_at_value(),
-							At::AutoComplete => "off",
-							At::SpellCheck => "false",
-							At::Custom("autocorrect".into()) => "off",
-							At::Custom("autocapitalize".into()) => "off",
-						],],
-					],
-				],
-				div![
-					class!["tr"],
-					div![
-						class!["td"],
-						textarea![attrs![
-							At::Name => "output",
-							At::Placeholder => "Translated text will be here.",
-							At::ReadOnly => true.as_at_value(),
-						],],
-					],
-				],
-				div![
-					class!["tr"],
-					div![class!["td"], button![attrs![At::Type => "submit", At::Name => "translate"], "Translate"]],
-				]
-			]
+			style![St::GridTemplateRows => "min-content auto auto min-content", St::GridRowGap => "1em"],
+			util::submit_ev(Event::Translate),
+			div![button![
+				attrs![At::Type => "button"],
+				ev(Ev::Click, |_| return Event::Home.into()),
+				"Back to home"
+			]],
+			div![
+				style![St::JustifySelf => "stretch", St::AlignSelf => "stretch"],
+				textarea![attrs![
+					At::Name => "input",
+					At::Required => true.as_at_value(),
+					At::AutoComplete => "off",
+					At::SpellCheck => "false",
+					At::Custom("autocorrect".into()) => "off",
+					At::Custom("autocapitalize".into()) => "off",
+				]]
+			],
+			div![
+				style![St::JustifySelf => "stretch", St::AlignSelf => "stretch"],
+				textarea![attrs![
+					At::Name => "output",
+					At::Placeholder => "Translated text will be here.",
+					At::ReadOnly => true.as_at_value(),
+				]]
+			],
+			div![button![attrs![At::Type => "submit", At::Name => "translate"], "Translate"]]
 		]];
 	}
 
@@ -71,14 +58,23 @@ impl State {
 			Event::Home => return Some(SuperState::Home(Home::default())),
 			Event::Translate(form, data) => {
 				let mut output = String::new();
+				let mut word = String::new();
 
-				for word in data.pget("input").split_whitespace() {
-					match Script::UywiChiffre.from_str(word) {
-						Ok(word) => output.push_str(&word.to_string(Script::IpaPeter)),
-						Err(_) => output.push_str(word),
+				for char in data.pget("input").chars() {
+					if char.is_whitespace() {
+						if !word.is_empty() {
+							match Script::UywiChiffre.from_str(&word) {
+								Ok(word) => output.push_str(&word.to_string(Script::IpaPeter)),
+								Err(_) => output.push_str(&word),
+							}
+
+							word.clear();
+						}
+
+						output.push(char);
+					} else {
+						word.push(char);
 					}
-
-					output.push(' ');
 				}
 
 				form.pget::<HtmlTextAreaElement>("output").set_value(&output);
