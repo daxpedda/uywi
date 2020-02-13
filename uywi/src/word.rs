@@ -74,8 +74,8 @@ impl Word {
 
 	/// Get word as [`String`].
 	#[must_use]
-	pub fn to_string(self, accent: Accent) -> String {
-		return accent.word(self).to_string();
+	pub fn to_string(self, script: Script) -> String {
+		return script.word(self).to_string();
 	}
 
 	/// Get [`Concept`].

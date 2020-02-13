@@ -6,14 +6,14 @@ use crate::{
 	Event as SuperEvent, State as SuperState,
 };
 use seed::prelude::{AsAtValue, At, El, Ev, IndexMap, Node, Orders, UpdateEl};
-use uywi::{Accent, Concept, Length, Page};
+use uywi::{Concept, Length, Page, Script};
 use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 
 /// State of the dictionary.
 #[derive(Default)]
 pub(crate) struct State {
-	/// Current accent.
-	accent: Accent,
+	/// Current script.
+	script: Script,
 	/// Current concept length.
 	length: Length,
 	/// Which type of data we are currently showing.
@@ -57,7 +57,7 @@ impl StateView {
 		let (page, concept, index) = match self {
 			Self::Page { page } => (page.to_string(), "".into(), "".into()),
 			Self::Concept { page, concept } | Self::Forms { page, concept } => {
-				(page.to_string(), concept.to_string(Accent::UywiChiffre), concept.index_as_string())
+				(page.to_string(), concept.to_string(Script::UywiChiffre), concept.index_as_string())
 			},
 		};
 
@@ -80,8 +80,8 @@ struct StateDataString {
 pub(crate) enum Event {
 	/// Go back to the homescreen.
 	Home,
-	/// Handle accent.
-	Accent(HtmlFormElement, FormData),
+	/// Handle script.
+	Script(HtmlFormElement, FormData),
 	/// Handle concept length.
 	Length(HtmlFormElement, FormData),
 	/// Handle page form.
@@ -116,8 +116,8 @@ impl State {
 						button![attrs![At::Type => "button"], ev(Ev::Click, |_| return Event::Home.into()), "Back to home"],
 					]
 				],
-				// accent
-				build_accent(self),
+				// script
+				build_script(self),
 				// concept length
 				form![
 					class!["tr"],
@@ -215,13 +215,13 @@ impl State {
 	pub(crate) fn update(&mut self, event: Event, orders: &mut impl Orders<SuperEvent>) -> Option<SuperState> {
 		match event {
 			Event::Home => return Some(SuperState::Home(Home::default())),
-			Event::Accent(_, data) => {
-				// set accent
-				let data = data.pget("input").parse().expect("accent input isn't an integer");
-				self.accent = match data {
-					0 => Accent::UywiChiffre,
-					1 => Accent::IpaPeter,
-					_ => unreachable!("invalid accent"),
+			Event::Script(_, data) => {
+				// set script
+				let data = data.pget("input").parse().expect("script input isn't an integer");
+				self.script = match data {
+					0 => Script::UywiChiffre,
+					1 => Script::IpaPeter,
+					_ => unreachable!("invalid script"),
 				}
 			},
 			Event::Length(_, data) => {
@@ -250,7 +250,7 @@ impl State {
 
 				// make sure html checks are passed
 				if input.check_validity() {
-					match Concept::from_str(&data.pget("input"), Accent::UywiChiffre) {
+					match Script::UywiChiffre.from_concept(&data.pget("input")) {
 						Ok(concept) => {
 							self.length = concept.length();
 							self.view = StateView::Concept {
@@ -289,7 +289,7 @@ impl State {
 				// make sure html checks are passed
 				if input.check_validity() {
 					// we want to display custom error messages if concept wasn't generated
-					if let Err(error) = Concept::from_str(&value, Accent::UywiChiffre) {
+					if let Err(error) = Script::UywiChiffre.from_concept(&value) {
 						input.set_custom_validity(&error.to_string());
 					}
 				}
@@ -307,25 +307,25 @@ impl State {
 	}
 }
 
-/// Build accent form.
-fn build_accent(state: &State) -> Node<SuperEvent> {
+/// Build script form.
+fn build_script(state: &State) -> Node<SuperEvent> {
 	use seed::{attrs, button, class, div, form, option, select};
 
 	return form![
 		class!["tr"],
-		util::submit_ev(Event::Accent),
-		div![class!["td"], "Accent:"],
+		util::submit_ev(Event::Script),
+		div![class!["td"], "Script:"],
 		div![
 			class!["td"],
 			select![
 				attrs![At::Name => "input"],
 				option![
-					attrs![At::Value => 0, At::Selected => (Accent::UywiChiffre == state.accent).as_at_value()],
-					Accent::UywiChiffre.to_string()
+					attrs![At::Value => 0, At::Selected => (Script::UywiChiffre == state.script).as_at_value()],
+					Script::UywiChiffre.to_string()
 				],
 				option![
-					attrs![At::Value => 1, At::Selected => (Accent::IpaPeter == state.accent).as_at_value()],
-					Accent::IpaPeter.to_string()
+					attrs![At::Value => 1, At::Selected => (Script::IpaPeter == state.script).as_at_value()],
+					Script::IpaPeter.to_string()
 				],
 			],
 		],
@@ -372,7 +372,7 @@ fn build_table(state: &State) -> Node<SuperEvent> {
 					cell.add_child(a![
 						attrs! [At::Href => "#"],
 						click_ev(concept, Event::OpenConcept),
-						concept.to_string(state.accent)
+						concept.to_string(state.script)
 					]);
 
 					html_row.add_child(cell);
@@ -393,7 +393,7 @@ fn build_table(state: &State) -> Node<SuperEvent> {
 				row.reserve_children(state.length.words_per_stem());
 
 				for form in stem {
-					row.add_child(td![form.to_string(state.accent)]);
+					row.add_child(td![form.to_string(state.script)]);
 				}
 
 				table.add_child(row);

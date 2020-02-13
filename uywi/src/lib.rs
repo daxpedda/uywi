@@ -13,24 +13,24 @@
 
 //! UYWI word generator.
 
-mod accent;
 mod concept;
 mod length;
 mod page;
 mod row;
+mod script;
 mod stem;
 mod structure;
 mod util;
 mod word;
 
-pub use accent::Accent;
 pub use concept::Concept;
 pub use length::Length;
 pub use page::{Page, Pages};
+pub use script::Script;
 
-pub(crate) use accent::{AccentExt, NUM_OF_RADICALS};
 pub(crate) use concept::Radical;
 pub(crate) use row::{Row, Rows};
+pub(crate) use script::{ScriptExt, NUM_OF_RADICALS};
 pub(crate) use stem::{Stem, Stems};
 pub(crate) use structure::{Letter, Vowel};
 pub(crate) use util::*;

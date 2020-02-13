@@ -7,16 +7,16 @@ use arrayvec::{ArrayString, ArrayVec};
 use std::mem;
 use unicode_segmentation::UnicodeSegmentation;
 
-/// Accent instantiation. Used to return from enum without [`Box`].
+/// Script instantiation. Used to return from enum without [`Box`].
 pub(super) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
 
 /// UYWI Chiffre.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct UywiChiffre {}
 
-impl AccentExt for UywiChiffre {
-	fn accent(&self) -> Accent {
-		return Accent::UywiChiffre;
+impl ScriptExt for UywiChiffre {
+	fn script(&self) -> Script {
+		return Script::UywiChiffre;
 	}
 
 	fn from_concept(&self, string: &str) -> Result<Concept> {
@@ -31,9 +31,9 @@ impl AccentExt for UywiChiffre {
 			// we checked correct length above
 			// returns if invalid radical
 			let radical = string.grapheme_nth(usize::from(*order)).expect("no radical found");
-			let radical_index = accent_radicals()
+			let radical_index = script_radicals()
 				.iter()
-				.position(|accent_radical| return *accent_radical == radical)
+				.position(|script_radical| return *script_radical == radical)
 				.ok_or(Error::ConceptRadicalInvalid)?;
 			let radical = Radical::from_index(radical_index.pinto());
 
@@ -72,7 +72,7 @@ impl AccentExt for UywiChiffre {
 		return Ok(Concept::new(radicals, length));
 	}
 
-	fn from_string(&self, string: &str) -> Result<ConceptOrWord> {
+	fn from_str(&self, string: &str) -> Result<ConceptOrWord> {
 		let mut concept = ArrayString::<[u8; WORD_BUFFER]>::new();
 
 		if let Ok(concept) = self.from_concept(string) {
@@ -92,7 +92,7 @@ impl AccentExt for UywiChiffre {
 
 						if let Ok(concept) = self.from_concept(&concept) {
 							for word in Words::new(concept, stem_index) {
-								if string == word.to_string(self.accent()) {
+								if string == word.to_string(self.script()) {
 									return Ok(ConceptOrWord::Word(word));
 								}
 							}
@@ -111,7 +111,7 @@ impl AccentExt for UywiChiffre {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
-			string.push_str(accent_radicals()[usize::from(radical.index())]);
+			string.push_str(script_radicals()[usize::from(radical.index())]);
 		}
 
 		return string;
@@ -135,7 +135,7 @@ impl AccentExt for UywiChiffre {
 					let concept_radical_index = usize::from(radical_index);
 					let radical_index = usize::from(concept_radicals[concept_radical_index].index());
 
-					string.push_str(accent_radicals()[radical_index])
+					string.push_str(script_radicals()[radical_index])
 				},
 				Letter::Vowel(vowel) | Letter::DuplicateVowel(vowel) | Letter::Nasal(vowel) => string.push_str(vowels.get(vowel)),
 			};
@@ -145,23 +145,23 @@ impl AccentExt for UywiChiffre {
 	}
 }
 
-/// Get radicals for this accent.
-const fn accent_radicals() -> [&'static str; NUM_OF_RADICALS] {
+/// Get radicals for this script.
+const fn script_radicals() -> [&'static str; NUM_OF_RADICALS] {
 	return [
 		"?", "Y", "w", "h", "2", "H", "K", "k", "X", "x", "8", "4", "G", "g", "j", "7", "3", "Q", "c", "9", "S", "s", "Z", "z", "D", "d", "T", "t",
 		"P", "0", "B", "6", "V", "f", "p", "b", "m", "n", "O", "R", "r", "1", "L", "l",
 	];
 }
 
-/// Get vowels for this accent.
-const fn accent_vowels() -> [&'static str; 2] {
+/// Get vowels for this script.
+const fn script_vowels() -> [&'static str; 2] {
 	return ["o", "ı"];
 }
 
 /// List how forms are configured.
 fn form_configs(length: Length, form_index: u8) -> Vowels {
 	let mut configs = ArrayVec::<[_; 4]>::new();
-	let [o, i] = accent_vowels();
+	let [o, i] = script_vowels();
 
 	match length {
 		Length::L2 => configs.try_extend_from_slice(&[Vowels(o, o), Vowels(i, i)]),

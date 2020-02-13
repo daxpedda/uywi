@@ -1,4 +1,4 @@
-//! Accent handling.
+//! Script handling.
 
 mod ipa_peter;
 mod uywi_chiffre;
@@ -16,48 +16,56 @@ const CONCEPT_BUFFER: usize = 64;
 /// Size of word buffer in bytes.
 const WORD_BUFFER: usize = 64;
 
-/// Display accent.
+/// Display script.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Accent {
+pub enum Script {
 	/// UYWI Chiffre.
 	UywiChiffre,
-	/// IPA (Peter's accent)
+	/// IPA (Peter's script)
 	IpaPeter,
 }
 
-impl Accent {
+impl Script {
+	/// Build [`Concept`] radicals from string.
+	/// # Errors
+	/// Returns [`Error`] on failing to build [`Concept`] from string.
+	#[allow(clippy::wrong_self_convention)]
+	pub fn from_concept(self, string: &str) -> Result<Concept> {
+		return self.as_ref().from_concept(string);
+	}
+
 	/// Build [`Concept`] or [`Word`] from string.
 	/// # Errors
-	/// Returns [`Error`] on failing to build [`Concept`] or [`Word`] from [`String`].
+	/// Returns [`Error`] on failing to build [`Concept`] or [`Word`] from string.
 	#[allow(clippy::wrong_self_convention)]
-	pub fn from_string(self, string: &str) -> Result<ConceptOrWord> {
-		return self.as_ref().from_string(string);
+	pub fn from_str(self, string: &str) -> Result<ConceptOrWord> {
+		return self.as_ref().from_str(string);
 	}
 }
 
-impl Default for Accent {
+impl Default for Script {
 	#[must_use]
 	fn default() -> Self {
 		return Self::UywiChiffre;
 	}
 }
 
-impl Display for Accent {
+impl Display for Script {
 	fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
 		return write!(
 			formatter,
 			"{}",
 			match self {
 				Self::UywiChiffre => "Uywi Chiffre",
-				Self::IpaPeter => "IPA (Peter's accent)",
+				Self::IpaPeter => "IPA (Peter's script)",
 			}
 		);
 	}
 }
 
-impl AsRef<dyn AccentExt> for Accent {
+impl AsRef<dyn ScriptExt> for Script {
 	#[must_use]
-	fn as_ref(&self) -> &(dyn AccentExt + 'static) {
+	fn as_ref(&self) -> &(dyn ScriptExt + 'static) {
 		return match self {
 			Self::UywiChiffre => &UYWI_CHIFFRE,
 			Self::IpaPeter => &IPA_PETER,
@@ -65,17 +73,17 @@ impl AsRef<dyn AccentExt> for Accent {
 	}
 }
 
-impl AccentExt for Accent {
-	fn accent(&self) -> Accent {
-		return self.as_ref().accent();
+impl ScriptExt for Script {
+	fn script(&self) -> Script {
+		return self.as_ref().script();
 	}
 
 	fn from_concept(&self, string: &str) -> Result<Concept> {
 		return self.as_ref().from_concept(string);
 	}
 
-	fn from_string(&self, string: &str) -> Result<ConceptOrWord> {
-		return self.as_ref().from_string(string);
+	fn from_str(&self, string: &str) -> Result<ConceptOrWord> {
+		return self.as_ref().from_str(string);
 	}
 
 	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]> {
@@ -87,16 +95,16 @@ impl AccentExt for Accent {
 	}
 }
 
-/// Unify all accents under a common API.
-pub(crate) trait AccentExt {
-	/// Get [`Accent`].
-	fn accent(&self) -> Accent;
+/// Unify all scripts under a common API.
+pub(crate) trait ScriptExt {
+	/// Get [`Script`].
+	fn script(&self) -> Script;
 
 	/// Build [`Concept`] radicals from string.
 	fn from_concept(&self, string: &str) -> Result<Concept>;
 
 	/// Build [`Concept`] or [`Word`] from string.
-	fn from_string(&self, string: &str) -> Result<ConceptOrWord>;
+	fn from_str(&self, string: &str) -> Result<ConceptOrWord>;
 
 	/// Build concept string.
 	fn concept(&self, concept: Concept) -> ArrayString<[u8; CONCEPT_BUFFER]>;
@@ -116,10 +124,10 @@ pub enum ConceptOrWord {
 
 impl ConceptOrWord {
 	/// Get string from [`Concept`] or [`Word`].
-	pub fn to_string(self, accent: Accent) -> String {
+	pub fn to_string(self, script: Script) -> String {
 		return match self {
-			Self::Concept(concept) => concept.to_string(accent),
-			Self::Word(word) => word.to_string(accent),
+			Self::Concept(concept) => concept.to_string(script),
+			Self::Word(word) => word.to_string(script),
 		};
 	}
 }

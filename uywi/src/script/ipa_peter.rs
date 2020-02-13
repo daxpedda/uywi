@@ -1,26 +1,26 @@
-//! IPA (Peter's accent)
+//! IPA (Peter's script)
 
 use super::*;
 use crate::*;
 use arrayvec::{ArrayString, ArrayVec};
 
-/// Accent instantiation. Used to return from enum without [`Box`].
+/// Script instantiation. Used to return from enum without [`Box`].
 pub(super) const IPA_PETER: IpaPeter = IpaPeter {};
 
 /// UYWI Chiffre.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct IpaPeter {}
 
-impl AccentExt for IpaPeter {
-	fn accent(&self) -> Accent {
-		return Accent::IpaPeter;
+impl ScriptExt for IpaPeter {
+	fn script(&self) -> Script {
+		return Script::IpaPeter;
 	}
 
 	fn from_concept(&self, _string: &str) -> Result<Concept> {
 		unimplemented!("build concept for ipa peter is unimplemented")
 	}
 
-	fn from_string(&self, _string: &str) -> Result<ConceptOrWord> {
+	fn from_str(&self, _string: &str) -> Result<ConceptOrWord> {
 		unimplemented!("build word for ipa peter is unimplemented")
 	}
 
@@ -28,7 +28,7 @@ impl AccentExt for IpaPeter {
 		let mut string = ArrayString::new();
 
 		for radical in concept.radicals() {
-			let radical = accent_radicals()[usize::from(radical.index())];
+			let radical = script_radicals()[usize::from(radical.index())];
 			string.push_str(&radical.as_str(true, false));
 		}
 
@@ -47,9 +47,9 @@ impl AccentExt for IpaPeter {
 		assimilation_2(&mut ipa_structure);
 		assimilation_3(&mut ipa_structure);
 		assimilation_4(&mut ipa_structure);
-		assimilation_5(&mut ipa_structure);
+		assimilation_5(&structure, &mut ipa_structure);
 		assimilation_6(&structure, &mut ipa_structure);
-		assimilation_7(&structure, &mut ipa_structure);
+		assimilation_7(&mut ipa_structure);
 
 		// build word
 		let mut word = ArrayString::new();
@@ -79,7 +79,7 @@ fn word_base(structure: &ArrayVec<[Letter; 8]>, concept: Concept, form_index: u8
 			Letter::Consonant(radical_index) => {
 				let concept_radical_index = usize::from(*radical_index);
 				let radical_index = usize::from(concept_radicals[concept_radical_index].index());
-				let radical = accent_radicals()[radical_index];
+				let radical = script_radicals()[radical_index];
 
 				ipa_structure.push(IpaLetter::Radical(radical, false));
 			},
@@ -199,33 +199,8 @@ fn assimilation_3(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	}
 }
 
-/// Fourth assimilation: turn all vowels after rounding consonants to rounding vowels.
-fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
-	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
-		// check if this is a radical
-		if let IpaLetter::Radical(letter, _) = letter_ipa {
-			// check if its rounding
-			if letter.is_rounding() {
-				// if there is something after it check if it's a vowel
-				if position.padd(1) < ipa_structure.len() {
-					let mut position = position.padd(1);
-
-					// if duplicate check the one after it
-					if let IpaLetter::Duplicate = ipa_structure[position] {
-						position = position.padd(1);
-					}
-
-					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
-						vowel.as_rounding()
-					}
-				}
-			}
-		}
-	}
-}
-
 /// Fifth assimilation: turn all consonants around voiceless consonants that are [`Alternative`](Quality3::Alternative) to their alternative form.
-fn assimilation_5(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+fn assimilation_4(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
 		// check if this is a radical
 		if let IpaLetter::Radical(letter, _) = letter_ipa {
@@ -255,7 +230,7 @@ fn assimilation_5(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 }
 
 /// Sixth assimilation: if the consonant should be removed at the beginning or end, remove it.
-fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+fn assimilation_5(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	{
 		// filter only for radicals and get the first one
 		let position = structure
@@ -356,7 +331,7 @@ fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 }
 
 /// Seventh assimilation: turn vowels that should be nasal to nasal.
-fn assimilation_7(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+fn assimilation_6(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 	for (letter_structure, letter_ipa) in structure.iter().zip(ipa_structure) {
 		// check if this is a nasal
 		if let Letter::Nasal(..) = letter_structure {
@@ -369,8 +344,33 @@ fn assimilation_7(structure: &ArrayVec<[Letter; 8]>, ipa_structure: &mut ArrayVe
 	}
 }
 
+/// Fourth assimilation: turn all vowels after rounding consonants to rounding vowels.
+fn assimilation_7(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
+	for (position, letter_ipa) in ipa_structure.clone().into_iter().enumerate() {
+		// check if this is a radical
+		if let IpaLetter::Radical(letter, _) = letter_ipa {
+			// check if its rounding
+			if letter.is_rounding() {
+				// if there is something after it check if it's a vowel
+				if position.padd(1) < ipa_structure.len() {
+					let mut position = position.padd(1);
+
+					// if duplicate check the one after it
+					if let IpaLetter::Duplicate = ipa_structure[position] {
+						position = position.padd(1);
+					}
+
+					if let IpaLetter::Vowel(vowel) = &mut ipa_structure[position] {
+						vowel.as_rounding()
+					}
+				}
+			}
+		}
+	}
+}
+
 /// List of radicals with all exceptions.
-const fn accent_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
+const fn script_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 	use Quality1::*;
 	use Quality2::*;
 	use Quality3::*;

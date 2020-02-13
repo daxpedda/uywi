@@ -16,7 +16,7 @@ use uywi::*;
 
 #[test]
 fn touch_all() {
-	let accent = Accent::UywiChiffre;
+	let script = Script::UywiChiffre;
 
 	[Length::L2, Length::L3, Length::L4].into_par_iter().for_each(|length| {
 		Pages::new(*length).par_bridge().for_each(|page| {
@@ -30,13 +30,13 @@ fn touch_all() {
 						"concept index is wrong"
 					);
 					assert!(
-						concept == Concept::from_str(&concept.to_string(accent), accent).expect("failed to create concept"),
+						concept == script.from_concept(&concept.to_string(script)).expect("failed to create concept"),
 						"concept index is wrong"
 					);
 
 					for stem in concept {
 						for form in stem {
-							let _word = form.to_string(accent);
+							let _word = form.to_string(script);
 						}
 					}
 

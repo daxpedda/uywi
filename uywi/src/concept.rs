@@ -91,13 +91,6 @@ impl Concept {
 		return Self::from_index(index.checked_sub(1).ok_or(Error::ConceptStringNull)?, length);
 	}
 
-	/// Build [`Concept`] from string.
-	/// # Errors
-	/// Returns [`Error`] on failing to build [`Concept`] from [`String`].
-	pub fn from_str(string: &str, accent: Accent) -> Result<Self> {
-		return accent.from_concept(string);
-	}
-
 	/// Get radicals.
 	pub(crate) fn radicals(self) -> ArrayVec<[Radical; 4]> {
 		let mut radicals = ArrayVec::new();
@@ -152,8 +145,8 @@ impl Concept {
 
 	/// Get concept as [`String`].
 	#[must_use]
-	pub fn to_string(self, accent: Accent) -> String {
-		return accent.concept(self).to_string();
+	pub fn to_string(self, script: Script) -> String {
+		return script.concept(self).to_string();
 	}
 
 	/// Get length.
@@ -183,7 +176,7 @@ impl IntoIterator for Concept {
 /// We don't really want to jumble around with [`str`]s and we don't want to accidentally do calculations.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Radical {
-	/// Index of the radical. Corresponds to [`AccentExtPriv::radicals`].
+	/// Index of the radical. Corresponds to [`ScriptExtPriv::radicals`].
 	index: u8,
 }
 
