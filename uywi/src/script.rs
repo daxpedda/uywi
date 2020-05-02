@@ -10,7 +10,7 @@ use std::fmt::{self, Display, Formatter};
 use uywi_chiffre::UYWI_CHIFFRE;
 
 /// Number of possible radicals.
-pub(crate) const NUM_OF_RADICALS: usize = 44;
+pub const NUM_OF_RADICALS: usize = 44;
 /// Size of concept buffer in bytes.
 const CONCEPT_BUFFER: usize = 64;
 /// Size of word buffer in bytes.
@@ -63,9 +63,9 @@ impl Display for Script {
 	}
 }
 
-impl AsRef<dyn ScriptExt> for Script {
+impl AsRef<dyn Extension> for Script {
 	#[must_use]
-	fn as_ref(&self) -> &(dyn ScriptExt + 'static) {
+	fn as_ref(&self) -> &(dyn Extension + 'static) {
 		return match self {
 			Self::UywiChiffre => &UYWI_CHIFFRE,
 			Self::IpaPeter => &IPA_PETER,
@@ -73,7 +73,7 @@ impl AsRef<dyn ScriptExt> for Script {
 	}
 }
 
-impl ScriptExt for Script {
+impl Extension for Script {
 	fn script(&self) -> Script {
 		return self.as_ref().script();
 	}
@@ -96,7 +96,7 @@ impl ScriptExt for Script {
 }
 
 /// Unify all scripts under a common API.
-pub(crate) trait ScriptExt {
+pub trait Extension {
 	/// Get [`Script`].
 	fn script(&self) -> Script;
 

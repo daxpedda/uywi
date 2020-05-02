@@ -175,7 +175,7 @@ impl IntoIterator for Concept {
 /// Convenience type to make it easier to deal with radicals.
 /// We don't really want to jumble around with [`str`]s and we don't want to accidentally do calculations.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Radical {
+pub struct Radical {
 	/// Index of the radical. Corresponds to [`ScriptExtPriv::radicals`].
 	index: u8,
 }

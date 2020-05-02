@@ -8,7 +8,8 @@
 	clippy::panic,
 	clippy::result_expect_used,
 	clippy::shadow_reuse,
-	clippy::shadow_same
+	clippy::shadow_same,
+	clippy::wildcard_imports
 )]
 
 //! UYWI word generator.
@@ -30,7 +31,7 @@ pub use script::Script;
 
 pub(crate) use concept::Radical;
 pub(crate) use row::{Row, Rows};
-pub(crate) use script::{ScriptExt, NUM_OF_RADICALS};
+pub(crate) use script::{Extension, NUM_OF_RADICALS};
 pub(crate) use stem::{Stem, Stems};
 pub(crate) use structure::{Letter, Vowel};
 pub(crate) use util::*;

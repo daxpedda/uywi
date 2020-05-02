@@ -11,7 +11,7 @@ use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 
 /// State of the dictionary.
 #[derive(Default)]
-pub(crate) struct State {
+pub struct State {
 	/// Current script.
 	script: Script,
 	/// Current concept length.
@@ -77,7 +77,7 @@ struct StateDataString {
 
 /// Events that are sent by the app.
 #[derive(Debug, Clone)]
-pub(crate) enum Event {
+pub enum Event {
 	/// Go back to the homescreen.
 	Home,
 	/// Handle script.

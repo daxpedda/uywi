@@ -4,9 +4,10 @@ use seed::{
 	prelude::{Ev, Node},
 	EventHandler,
 };
+use std::io::{Error, ErrorKind};
 #[cfg(debug_assertions)]
 use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{FormData, HtmlFormElement, HtmlInputElement};
 use wee_alloc::WeeAlloc;
 
@@ -120,10 +121,36 @@ pub fn click_ev<T: Clone + 'static, EF: Into<EI>, EI>(value: T, handler: impl Fn
 	});
 }
 
-#[cfg(debug_assertions)]
-#[wasm_bindgen(inline_js = "export function set_stacktracelimit(limit) { Error.stackTraceLimit = limit; }")]
+#[wasm_bindgen]
 extern "C" {
-	/// Translates to `Error.stackTraceLimit = limit` for increased size of the stacktrace.
-	#[allow(clippy::needless_pass_by_value, clippy::missing_docs_in_private_items)]
-	pub fn set_stacktracelimit(limit: f32);
+	type Global;
+
+	#[wasm_bindgen(method, getter, js_name = Error)]
+	fn error(this: &Global) -> JsError;
+}
+
+#[wasm_bindgen]
+extern "C" {
+	type JsError;
+
+	#[wasm_bindgen(method, getter, js_name = stackTraceLimit)]
+	fn stack_trace_limit(this: &JsError) -> JsValue;
+
+	#[wasm_bindgen(method, setter, js_name = stackTraceLimit)]
+	fn set_stack_trace_limit(this: &JsError, stack_trace_limit: f32);
+}
+
+/// Removes the limit of error stacktraces.
+///
+/// # Errors
+/// Returns [`Err`] if browser doesn't support `Error.stackTraceLimit`.
+pub fn unlimited_stack_trace_limit() -> Result<(), Error> {
+	let error = js_sys::global().unchecked_into::<Global>().error();
+
+	if error.stack_trace_limit().is_undefined() {
+		return Err(Error::new(ErrorKind::Other, "browser doesn't support `Error.stackTraceLimit`"));
+	} else {
+		error.set_stack_trace_limit(f32::INFINITY);
+		return Ok(());
+	}
 }

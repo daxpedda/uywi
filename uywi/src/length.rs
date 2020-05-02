@@ -92,7 +92,7 @@ impl Length {
 	/// Number of stems in a concept.
 	#[must_use]
 	pub fn stems_per_concept(self) -> usize {
-		return structure::structure_list(self).len();
+		return structure::list(self).len();
 	}
 
 	/// Number of words in a stem.

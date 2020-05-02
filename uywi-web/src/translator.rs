@@ -92,7 +92,7 @@ impl State {
 
 /// Translator events.
 #[derive(Debug, Clone)]
-pub(crate) enum Event {
+pub enum Event {
 	/// Go back to the homescreen.
 	Home,
 	/// Translate!

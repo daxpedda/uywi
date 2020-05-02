@@ -14,7 +14,7 @@ pub(super) const UYWI_CHIFFRE: UywiChiffre = UywiChiffre {};
 #[derive(Clone, Copy, Debug)]
 pub(super) struct UywiChiffre {}
 
-impl ScriptExt for UywiChiffre {
+impl Extension for UywiChiffre {
 	fn script(&self) -> Script {
 		return Script::UywiChiffre;
 	}

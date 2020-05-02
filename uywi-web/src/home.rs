@@ -42,7 +42,7 @@ impl State {
 
 /// Homescreen events.
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum Event {
+pub enum Event {
 	/// Show dictionary.
 	Dictionary,
 	/// Show translator.

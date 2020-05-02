@@ -6,6 +6,7 @@ edition = "2018"
 description = "UYWI word generator frontend."
 
 [dependencies]
+js-sys = "0.3"
 log = { version = "0.4", features = ["release_max_level_off"] }
 seed = "0.6"
 uywi = { path = "../uywi"}

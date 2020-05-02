@@ -8,7 +8,8 @@
 	clippy::panic,
 	clippy::result_expect_used,
 	clippy::shadow_reuse,
-	clippy::shadow_same
+	clippy::shadow_same,
+	clippy::wildcard_imports
 )]
 
 //! This is a simple wasm powered page that generates all possible words of the UYWI language.
@@ -116,11 +117,13 @@ fn main() {
 	#[cfg(debug_assertions)]
 	{
 		use log::Level;
-		use std::f32;
 		use wasm_logger::{init, Config};
 
 		// increase stacktrace limit
-		util::set_stacktracelimit(f32::INFINITY);
+		#[allow(unused_must_use)]
+		{
+			util::unlimited_stack_trace_limit();
+		}
 
 		// initialize logging
 		init(Config::new(Level::max()).message_on_new_line());

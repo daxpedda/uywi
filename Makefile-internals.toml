@@ -30,7 +30,7 @@ script = [
 [tasks.web-build-dev]
 private = true
 command = "cargo"
-args = ["build", "--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}", "-Z", "config-profile"]
+args = ["build", "--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}", "-Z", "named-profiles"]
 
 [tasks.web-build-release]
 private = true
@@ -39,7 +39,7 @@ args = [
 	"build",
 	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
 	"--profile", "release-web",
-	"-Z", "config-profile",
+	"-Z", "named-profiles",
 	"-Z", "build-std=std,panic_abort",
 	"-Z", "unstable-options",
 ]
@@ -93,7 +93,7 @@ command = "cargo"
 args = [
 	"build",
 	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
-	"-Z", "config-profile",
+	"-Z", "named-profiles",
 ]
 
 [tasks.build-dev-web]
@@ -107,7 +107,7 @@ args = [
 	"build",
 	"--release",
 	"--target", "${CARGO_MAKE_CRATE_TARGET_TRIPLE}",
-	"-Z", "config-profile",
+	"-Z", "named-profiles",
 	"-Z", "build-std",
 ]
 

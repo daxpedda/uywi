@@ -5,7 +5,7 @@ use arrayvec::ArrayVec;
 
 /// Represents a consonant or a vowel in a structure.
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Letter {
+pub enum Letter {
 	/// Represents a consonant position.
 	Consonant(u8),
 	/// Represents a vowel.
@@ -63,7 +63,7 @@ impl Letter {
 
 /// Represents a vowel.
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Vowel {
+pub enum Vowel {
 	/// Represents the first vowel.
 	First,
 	/// Represents the second vowel.
@@ -71,7 +71,7 @@ pub(crate) enum Vowel {
 }
 
 /// List of how stems are configured.
-pub(crate) fn structure_list(length: Length) -> ArrayVec<[&'static str; 8]> {
+pub fn list(length: Length) -> ArrayVec<[&'static str; 8]> {
 	let mut configs = ArrayVec::new();
 
 	match length {
@@ -100,9 +100,9 @@ pub(crate) fn structure_list(length: Length) -> ArrayVec<[&'static str; 8]> {
 }
 
 /// Stem configuration list.
-pub(crate) fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 8]> {
+pub fn structures(length: Length, stem_index: u8) -> ArrayVec<[Letter; 8]> {
 	let mut configs = ArrayVec::<[_; 8]>::new();
-	let configs_internal = structure_list(length);
+	let configs_internal = list(length);
 
 	for index in 0..length.stems_per_concept() {
 		let mut config = ArrayVec::new();

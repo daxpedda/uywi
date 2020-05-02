@@ -12,7 +12,7 @@
 )]
 
 use rayon::prelude::*;
-use uywi::*;
+use uywi::{Concept, Length, Pages, Script};
 
 #[test]
 fn touch_all() {

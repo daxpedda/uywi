@@ -11,7 +11,7 @@ pub(super) const IPA_PETER: IpaPeter = IpaPeter {};
 #[derive(Clone, Copy, Debug)]
 pub(super) struct IpaPeter {}
 
-impl ScriptExt for IpaPeter {
+impl Extension for IpaPeter {
 	fn script(&self) -> Script {
 		return Script::IpaPeter;
 	}
@@ -370,6 +370,7 @@ fn assimilation_7(ipa_structure: &mut ArrayVec<[IpaLetter; 8]>) {
 }
 
 /// List of radicals with all exceptions.
+#[allow(clippy::enum_glob_use)]
 const fn script_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 	use Quality1::*;
 	use Quality2::*;
@@ -387,7 +388,7 @@ const fn script_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 		IpaRadical("k",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
 		IpaRadical("kʰ", Neutral, false, None,           Some(Voiceless),        None),
 		IpaRadical("x",  Dark,    false, Some(Shading),  Some(Voiceless),        None),
-		IpaRadical("x",  Light,   false, None,           Some(Voiceless),        None),
+		IpaRadical("ç",  Light,   false, None,           Some(Voiceless),        None),
 		IpaRadical("ʁ",  Neutral, false, None,           Some(Alternative("χ")), None),
 		IpaRadical("ɟ",  Neutral, false, None,           Some(Alternative("c")), None),
 		IpaRadical("g",  Dark,    false, Some(Shading),  None,                   None),
@@ -426,6 +427,7 @@ const fn script_radicals() -> [IpaRadical; NUM_OF_RADICALS] {
 }
 
 /// List how forms are configured.
+#[allow(clippy::enum_glob_use)]
 fn form_configs(length: Length, form_index: u8) -> Vowels {
 	use IpaVowel::*;
 
